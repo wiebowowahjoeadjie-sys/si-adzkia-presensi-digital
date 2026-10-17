@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-siadzkia-9bedac7c-830e-455d-b29b-521b06de8191",
+      "rules": "firestore.rules"
+    }
+  ]
+}

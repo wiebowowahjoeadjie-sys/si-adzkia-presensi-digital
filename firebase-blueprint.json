@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "attendance": {
+      "collection": "attendances",
+      "fields": {
+        "studentName": { "type": "string" },
+        "studentNis": { "type": "string" },
+        "class": { "type": "string" },
+        "prayer": { "type": "string" },
+        "status": { "type": "string" },
+        "method": { "type": "string" },
+        "refCode": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "distance": { "type": "number", "optional": true },
+        "notes": { "type": "string", "optional": true },
+        "officer": { "type": "string", "optional": true }
+      }
+    },
+    "student": {
+      "collection": "students",
+      "fields": {
+        "name": { "type": "string" },
+        "nis": { "type": "string" },
+        "class": { "type": "string" },
+        "absen": { "type": "number" },
+        "gender": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "issue": {
+      "collection": "issues",
+      "fields": {
+        "studentName": { "type": "string" },
+        "class": { "type": "string" },
+        "type": { "type": "string" },
+        "prayer": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "officer": { "type": "string", "optional": true }
+      }
+    },
+    "officer": {
+      "collection": "officers",
+      "fields": {
+        "name": { "type": "string" },
+        "class": { "type": "string" },
+        "position": { "type": "string" },
+        "username": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "permissions": { "type": "array" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "audit_log": {
+      "collection": "audit_logs",
+      "fields": {
+        "timestamp": { "type": "string" },
+        "actor": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "risk": { "type": "string" },
+        "result": { "type": "string" },
+        "details": { "type": "string" }
+      }
+    }
+  }
+}

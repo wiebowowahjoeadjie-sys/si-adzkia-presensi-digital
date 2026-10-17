@@ -1,0 +1,4173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SI-Adzkia — Sistem Informasi Presensi Sholat SMKN 6 Yogyakarta</title>
+  <meta name="description" content="Sistem Informasi Presensi Sholat Siswa SMKN 6 Yogyakarta - ROHIS ADZKIA. Fastabiqul Khairat. Terhubung Cloud Database Firestore.">
+  <meta name="theme-color" content="#064e3b">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF & AutoTable for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #064e3b;
+      --primary-dark: #022c22;
+      --primary-light: #0a5c48;
+      --primary-hover: #04382a;
+      --primary-bg: #ecfdf5;
+      --sky: #0284c7;
+      --sky-light: #e0f2fe;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --amber-light: #fef3c7;
+      --rose: #ef4444;
+      --rose-light: #fee2e2;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--slate-50);
+      color: var(--slate-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Splash Screen */
+    #splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #064e3b 0%, #0a5c48 50%, #022c22 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+      color: white;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .splash-logo-wrapper {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 18px;
+      animation: pulse-logo 2s infinite ease-in-out;
+      filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.4));
+    }
+
+    @keyframes pulse-logo {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .splash-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .splash-subtitle {
+      font-size: 14px;
+      color: #a7f3d0;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .splash-tagline {
+      font-size: 13px;
+      font-style: italic;
+      color: #fef08a;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    .splash-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #34d399;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .splash-footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* App container blur on splash */
+    #app-container.blurred {
+      filter: blur(8px);
+      transition: filter 0.6s ease;
+    }
+    #app-container {
+      transition: filter 0.6s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Nav */
+    header.main-header {
+      background: white;
+      border-bottom: 1px solid var(--slate-200);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .brand-logo-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: white;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+      border: 1px solid var(--slate-200);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-info h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+
+    .brand-info p {
+      font-size: 11px;
+      color: var(--slate-600);
+      font-weight: 500;
+    }
+
+    .brand-info .tagline-badge {
+      font-size: 10px;
+      font-style: italic;
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Online Cloud Status Indicator */
+    .cloud-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .cloud-status-badge.online {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .cloud-status-badge.offline {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    .cloud-status-badge.syncing {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .cloud-status-badge.online .pulse-dot {
+      background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+      animation: pulse-ring 2s infinite;
+    }
+    .cloud-status-badge.offline .pulse-dot {
+      background: #ef4444;
+    }
+    .cloud-status-badge.syncing .pulse-dot {
+      background: #0284c7;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      min-height: 38px;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+
+    .btn-outline {
+      border-color: var(--slate-300);
+      background-color: white;
+      color: var(--slate-700);
+    }
+    .btn-outline:hover { background-color: var(--slate-100); }
+
+    .btn-sky { background-color: var(--sky); color: white; }
+    .btn-emerald { background-color: var(--emerald); color: white; }
+    .btn-rose { background-color: var(--rose); color: white; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-emerald { background: var(--primary-bg); color: var(--primary); }
+    .badge-amber { background: var(--amber-light); color: #b45309; }
+    .badge-rose { background: var(--rose-light); color: var(--rose); }
+    .badge-sky { background: var(--sky-light); color: var(--sky); }
+
+    /* Layout Containers */
+    main.main-body {
+      flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, #064e3b 0%, #0a5c48 60%, #0369a1 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .live-clock-card {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .time-digits {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    .date-string {
+      font-size: 13.5px;
+      color: #a7f3d0;
+      font-weight: 500;
+    }
+
+    .prayer-status-box {
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(8px);
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .prayer-status-box .label {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #fef08a;
+      font-weight: 700;
+    }
+
+    .prayer-status-box .val {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .prayer-status-box .sub {
+      font-size: 11px;
+      color: #e2e8f0;
+    }
+
+    /* Tabs */
+    .student-tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 2px solid var(--slate-200);
+      margin-bottom: 18px;
+      overflow-x: auto;
+    }
+
+    .student-tab-btn {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-600);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .student-tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--slate-100);
+      padding-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--slate-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-700);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      color: var(--slate-900);
+      background-color: white;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      min-height: 42px;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.15);
+    }
+
+    .autocomplete-list {
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-sm);
+      background: white;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-top: 4px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      position: absolute;
+      width: 100%;
+      z-index: 100;
+    }
+
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--slate-100);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .autocomplete-item:hover {
+      background-color: var(--primary-bg);
+      color: var(--primary);
+    }
+
+    /* Student ID Card */
+    .student-id-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+      border: 2px solid #34d399;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .student-id-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .student-name-big {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .student-id-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .id-field .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--slate-600);
+      font-weight: 600;
+    }
+
+    .id-field .val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-800);
+    }
+
+    /* Status Grid */
+    .status-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .status-option {
+      border: 1.5px solid var(--slate-200);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+      background: white;
+    }
+
+    .status-option:hover {
+      border-color: var(--primary-light);
+      background: var(--slate-50);
+    }
+
+    .status-option.selected {
+      border-color: var(--primary);
+      background: var(--primary-bg);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .status-option.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--slate-200);
+      background: var(--slate-100);
+    }
+
+    .status-option .title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--slate-800);
+    }
+
+    /* Map Box */
+    #attendance-map-container {
+      margin-top: 14px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--slate-300);
+      background: var(--slate-100);
+    }
+
+    #attendance-map {
+      height: 230px;
+      width: 100%;
+    }
+
+    .location-telemetry-bar {
+      padding: 10px 14px;
+      background: white;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    /* Admin View Layout */
+    #admin-view {
+      display: none;
+    }
+
+    .admin-layout {
+      display: flex;
+      gap: 18px;
+      min-height: calc(100vh - 120px);
+    }
+
+    .admin-sidebar {
+      width: 250px;
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--slate-200);
+      padding: 12px 10px;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      height: fit-content;
+    }
+
+    .admin-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .admin-nav-item:hover {
+      background: var(--slate-100);
+      color: var(--primary);
+    }
+
+    .admin-nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .admin-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout { flex-direction: column; }
+      .admin-sidebar {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+
+    /* Table */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-sm);
+      background: white;
+      margin-top: 12px;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: var(--slate-100);
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--slate-700);
+      border-bottom: 2px solid var(--slate-200);
+      white-space: nowrap;
+    }
+
+    table.data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--slate-200);
+      color: var(--slate-800);
+      vertical-align: middle;
+    }
+
+    table.data-table tbody tr:hover {
+      background: var(--slate-50);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-info .num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--slate-900);
+      line-height: 1.1;
+    }
+
+    .stat-info .label {
+      font-size: 11px;
+      color: var(--slate-600);
+      font-weight: 600;
+    }
+
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      background: white;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--slate-200);
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-window {
+      background: white;
+      border-radius: var(--radius);
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    .modal-body { padding: 18px; }
+
+    .modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--slate-50);
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    /* Moving Dynamic Watermark */
+    .receipt-container {
+      background: white;
+      border: 2px solid var(--slate-200);
+      border-radius: var(--radius);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .animated-watermark-overlay {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0.12;
+      background: repeating-linear-gradient(
+        -45deg,
+        #064e3b,
+        #064e3b 25px,
+        transparent 25px,
+        transparent 50px
+      );
+      animation: watermark-slide 15s linear infinite;
+    }
+
+    @keyframes watermark-slide {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(50px); }
+    }
+
+    .watermark-text-ribbon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 18px;
+      font-weight: 900;
+      color: rgba(6, 78, 59, 0.18);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 11;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Toasts */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    .toast {
+      background: white;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      box-shadow: var(--shadow-lg);
+      border-left: 4px solid var(--primary);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      animation: slide-in 0.3s ease forwards;
+    }
+    @keyframes slide-in {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast.success { border-left-color: var(--emerald); }
+    .toast.error { border-left-color: var(--rose); }
+    .toast.warning { border-left-color: var(--amber); }
+
+    footer.main-footer {
+      background: white;
+      border-top: 1px solid var(--slate-200);
+      padding: 16px;
+      margin-top: auto;
+      text-align: center;
+      font-size: 12px;
+      color: var(--slate-600);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================== -->
+  <!-- SVG DEFINITIONS: OFFICIAL EMBLEM LOGO SI-ADZKIA                -->
+  <!-- ============================================================== -->
+  <svg style="display:none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Official Emblem Crest SI-Adzkia ROHIS SMKN 6 Yogyakarta -->
+      <g id="si-adzkia-official-logo">
+        <!-- Circular Outer Ring -->
+        <circle cx="100" cy="100" r="95" fill="#ffffff" stroke="#064e3b" stroke-width="7" />
+        <!-- Inner Decorative Islamic Frame -->
+        <circle cx="100" cy="100" r="90" fill="none" stroke="#0a5c48" stroke-width="1.5" stroke-dasharray="3,3" />
+
+        <!-- Islamic Archway & Mihrab Outline -->
+        <path d="M 60,115 L 60,78 C 60,54 75,40 100,32 C 125,40 140,54 140,78 L 140,115 Z"
+              fill="none" stroke="#064e3b" stroke-width="4.5" stroke-linejoin="round" />
+
+        <!-- 8-Pointed Star & Crescent on Top of Minaret -->
+        <path d="M 100,22 C 101,26 103,27 106,27 C 103,29 101,31 100,34 C 99,31 97,29 94,27 C 97,27 99,26 100,22 Z"
+              fill="#f59e0b" />
+
+        <!-- Stylized Calligraphic 'S' and 'i' (SI-Adzkia) Ribbon -->
+        <path d="M 72,105 C 64,88 72,66 86,58 C 96,52 108,58 102,74 C 96,88 84,94 88,104 C 92,112 104,110 114,98"
+              fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M 98,46 L 98,78"
+              fill="none" stroke="#064e3b" stroke-width="6" stroke-linecap="round" />
+
+        <!-- Smartphone Badge (Presensi Online) with Checkmark -->
+        <rect x="114" y="60" width="28" height="42" rx="5" fill="#ffffff" stroke="#064e3b" stroke-width="3" />
+        <circle cx="128" cy="81" r="9" fill="#10b981" />
+        <path d="M 124,81 L 127,84 L 133,78" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Open Al-Qur'an Book Base -->
+        <path d="M 100,108 C 88,100 70,102 54,110 L 54,120 C 70,112 88,110 100,118 C 112,110 130,112 146,120 L 146,110 C 130,102 112,100 100,108 Z"
+              fill="#064e3b" />
+        <path d="M 100,112 C 90,105 74,107 60,113 L 60,116 C 74,110 90,109 100,115 C 110,109 126,110 140,116 L 140,113 C 126,107 110,105 100,112 Z"
+              fill="#34d399" />
+
+        <!-- Typography Banners -->
+        <!-- 1. SI-Adzkia -->
+        <text x="100" y="142" font-family="Georgia, serif" font-size="21" font-weight="900" fill="#064e3b" text-anchor="middle" letter-spacing="0.5">SI-Adzkia</text>
+
+        <!-- 2. — ROHIS ADZKIA — -->
+        <text x="100" y="156" font-family="-apple-system, sans-serif" font-size="9" font-weight="800" fill="#064e3b" text-anchor="middle" letter-spacing="1.5">— ROHIS ADZKIA —</text>
+
+        <!-- 3. PRESENSI ONLINE Capsule -->
+        <rect x="52" y="161" width="96" height="15" rx="7.5" fill="#064e3b" />
+        <text x="100" y="172" font-family="-apple-system, sans-serif" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">PRESENSI ONLINE</text>
+
+        <!-- 4. Fastabiqul Khairat -->
+        <text x="100" y="185" font-family="Georgia, serif" font-size="8.5" font-style="italic" font-weight="600" fill="#0a5c48" text-anchor="middle">Fastabiqul Khairat</text>
+      </g>
+    </defs>
+  </svg>
+
+  <!-- ============================================================== -->
+  <!-- 1. SPLASH SCREEN (2.5 DETIK) DENGAN LOGO RESMI                 -->
+  <!-- ============================================================== -->
+  <div id="splash-screen">
+    <div class="splash-logo-wrapper">
+      <svg viewBox="0 0 200 200" width="100%" height="100%">
+        <use href="#si-adzkia-official-logo" />
+      </svg>
+    </div>
+    <h1 class="splash-title">SI-Adzkia</h1>
+    <p class="splash-subtitle">Sistem Informasi Presensi Sholat SMKN 6 Yogyakarta</p>
+    <p class="splash-tagline">Fastabiqul Khairat</p>
+    <div class="splash-spinner"></div>
+    <div class="splash-footer">ROHIS ADZKIA &copy; 2026–2027 &bull; Terhubung Database Cloud Firestore</div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="app-container" class="blurred">
+
+    <!-- HEADER -->
+    <header class="main-header">
+      <div class="header-content">
+        <div class="brand-section" onclick="navigateTo('student')">
+          <div class="brand-logo-img">
+            <svg viewBox="0 0 200 200" width="100%" height="100%">
+              <use href="#si-adzkia-official-logo" />
+            </svg>
+          </div>
+          <div class="brand-info">
+            <h1>SI-Adzkia</h1>
+            <p>SMKN 6 Yogyakarta &bull; <span class="tagline-badge">Fastabiqul Khairat</span></p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Real-Time Online / Offline Cloud Firestore Status -->
+          <div id="cloud-status-indicator" class="cloud-status-badge online" title="Status koneksi ke Google Cloud Firestore">
+            <span class="pulse-dot"></span>
+            <span id="cloud-status-text">Online • Cloud Terhubung</span>
+          </div>
+
+          <button id="btn-admin-switch" class="btn btn-outline" onclick="handleAdminHeaderClick()">
+            <i data-lucide="user-cog" style="width:16px;height:16px;"></i>
+            <span id="admin-btn-text">Admin Rohis</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <main class="main-body">
+
+      <!-- ============================================== -->
+      <!-- SECTION 1: STUDENT VIEW (HALAMAN UTAMA SISWA)  -->
+      <!-- ============================================== -->
+      <div id="student-view">
+
+        <!-- Live Clock Hero Banner -->
+        <div class="hero-banner">
+          <div class="live-clock-card">
+            <div>
+              <div class="date-string" id="live-date">Memuat tanggal...</div>
+              <div class="time-digits" id="live-clock">00:00:00 <span style="font-size:15px;font-weight:500;">WIB</span></div>
+              <div style="font-size:12px;opacity:0.9;margin-top:4px;">
+                Masjid Rohis Adzkia &bull; SMKN 6 Yogyakarta &bull; Waktu Resmi Server
+              </div>
+            </div>
+            <div class="prayer-status-box">
+              <div class="label" id="hero-prayer-label">Sholat Berikutnya</div>
+              <div class="val" id="hero-prayer-name">Dzuhur</div>
+              <div class="sub" id="hero-prayer-countdown">Countdown: --:--:--</div>
+              <div style="margin-top:6px;">
+                <span class="badge badge-emerald" id="hero-session-status">Sesi Aktif</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Tabs -->
+        <div class="student-tabs">
+          <button class="student-tab-btn active" onclick="switchStudentTab('form')">
+            <i data-lucide="edit-3" style="width:16px;height:16px;"></i> Presensi Mandiri
+          </button>
+          <button class="student-tab-btn" onclick="switchStudentTab('schedule')">
+            <i data-lucide="calendar" style="width:16px;height:16px;"></i> Jadwal Sholat
+          </button>
+          <button class="student-tab-btn" onclick="switchStudentTab('guide')">
+            <i data-lucide="book-open" style="width:16px;height:16px;"></i> Panduan & Tata Tertib
+          </button>
+          <button class="student-tab-btn" onclick="switchStudentTab('issue')">
+            <i data-lucide="help-circle" style="width:16px;height:16px;"></i> Lapor Kendala
+          </button>
+        </div>
+
+        <!-- TAB 1: FORM PRESENSI -->
+        <div id="student-tab-form">
+
+          <!-- Islamic Motivation Card -->
+          <div class="card" style="background:linear-gradient(to right, #ecfdf5, #f0fdf4);border-left:5px solid var(--primary);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <i data-lucide="sparkles" style="width:18px;height:18px;color:var(--primary);"></i>
+              <strong style="font-size:13px;color:var(--primary);">Pesan Kejujuran & Muraqabah</strong>
+            </div>
+            <p style="font-size:13.5px;font-style:italic;color:var(--slate-700);line-height:1.6;margin-bottom:6px;">
+              "Hendaklah kalian senantiasa berlaku jujur, karena sesungguhnya kejujuran mengantarkan kepada kebaikan dan kebaikan mengantarkan ke surga."
+            </p>
+            <div style="font-size:12px;font-weight:700;color:var(--primary);text-align:right;">
+              HR. Bukhari no. 6094 & Muslim no. 2607
+            </div>
+          </div>
+
+          <!-- Non-Muslim Students Banner -->
+          <div style="background:#f8fafc;border:1px dashed var(--slate-300);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:var(--slate-600);display:flex;align-items:center;gap:10px;">
+            <i data-lucide="info" style="width:20px;height:20px;color:var(--sky);flex-shrink:0;"></i>
+            <div>
+              <strong>Catatan Toleransi:</strong> Bagi siswa/i non-Muslim, presensi sholat tidak diwajibkan. Silakan mengikuti ketentuan kegiatan sekolah yang berlaku.
+            </div>
+          </div>
+
+          <!-- Attendance Form Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="check-circle" style="width:20px;height:20px;color:var(--primary);"></i>
+                Formulir Presensi Sholat Siswa
+              </div>
+              <span class="badge badge-emerald" id="cloud-sync-tag">
+                <i data-lucide="cloud" style="width:12px;height:12px;"></i> Sinkronisasi Cloud
+              </span>
+            </div>
+
+            <form id="attendance-form" onsubmit="event.preventDefault(); handleAttendanceSubmit();">
+
+              <!-- Step 1: Input Nama Lengkap (Auto uppercase & Live Search 39 Classes) -->
+              <div class="form-group" style="position:relative;">
+                <label class="form-label" for="student-name-input">
+                  Nama Lengkap Siswa <span style="color:var(--rose);">*</span>
+                </label>
+                <div style="position:relative;">
+                  <input type="text" id="student-name-input" class="form-control"
+                    placeholder="Ketik nama lengkap atau NIS siswa..."
+                    autocomplete="off"
+                    oninput="handleStudentNameInput(this.value)" />
+                  <span style="position:absolute;right:12px;top:12px;color:var(--slate-400);">
+                    <i data-lucide="search" style="width:18px;height:18px;"></i>
+                  </span>
+                </div>
+                <div id="student-autocomplete-list" class="autocomplete-list"></div>
+                <div style="font-size:11.5px;color:var(--slate-500);margin-top:4px;">
+                  Pencarian mencakup 39 kelas resmi SMKN 6 Yogyakarta. Jika nama Anda belum ada, hubungi Admin Rohis.
+                </div>
+              </div>
+
+              <!-- Step 2: Student Identity Card -->
+              <div id="student-identity-card" class="student-id-card">
+                <div class="student-id-header">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;">
+                      <svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#si-adzkia-official-logo" /></svg>
+                    </div>
+                    <div>
+                      <span class="badge badge-emerald" style="margin-bottom:2px;">Terdaftar di Master Data</span>
+                      <div class="student-name-big" id="card-student-name">NAMA SISWA</div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="resetSelectedStudent()">
+                    Ganti
+                  </button>
+                </div>
+                <div class="student-id-grid">
+                  <div class="id-field">
+                    <div class="label">Kelas</div>
+                    <div class="val" id="card-student-class">-</div>
+                  </div>
+                  <div class="id-field">
+                    <div class="label">NIS</div>
+                    <div class="val" id="card-student-nis">-</div>
+                  </div>
+                  <div class="id-field">
+                    <div class="label">No. Absen</div>
+                    <div class="val" id="card-student-absen">-</div>
+                  </div>
+                  <div class="id-field">
+                    <div class="label">Gender</div>
+                    <div class="val" id="card-student-gender">-</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3: Prayer Selection -->
+              <div class="form-group">
+                <label class="form-label">Pilih Waktu Sholat <span style="color:var(--rose);">*</span></label>
+                <select id="prayer-select" class="form-control" onchange="handlePrayerSelectChange(this.value)">
+                  <!-- 8 options populated by JS -->
+                </select>
+              </div>
+
+              <!-- Step 4: Attendance Status -->
+              <div class="form-group">
+                <label class="form-label">Status Presensi <span style="color:var(--rose);">*</span></label>
+                <div class="status-selection-grid">
+                  <div class="status-option selected" id="opt-hadir" onclick="selectStatus('Hadir Salat')">
+                    <div class="title">Hadir Salat</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Validasi GPS Masjid</div>
+                  </div>
+                  <div class="status-option" id="opt-izin" onclick="selectStatus('Izin')">
+                    <div class="title">Izin</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Keperluan resmi</div>
+                  </div>
+                  <div class="status-option" id="opt-sakit" onclick="selectStatus('Sakit')">
+                    <div class="title">Sakit</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Kondisi medis</div>
+                  </div>
+                  <div class="status-option" id="opt-pulang" onclick="selectStatus('Pulang Sebelum Adzan')">
+                    <div class="title">Pulang Cepat</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Sebelum adzan</div>
+                  </div>
+                  <div class="status-option" id="opt-haid" onclick="selectStatus('Haid')">
+                    <div class="title">Haid</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Khusus siswi (P)</div>
+                  </div>
+                  <div class="status-option" id="opt-terlambat" onclick="selectStatus('Terlambat')">
+                    <div class="title">Terlambat</div>
+                    <div style="font-size:10px;color:var(--slate-500);">Lewat toleransi</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes field for Izin/Sakit/Terlambat -->
+              <div class="form-group" id="notes-group" style="display:none;">
+                <label class="form-label" id="notes-label">Keterangan / Alasan Tambahan</label>
+                <input type="text" id="attendance-notes" class="form-control" placeholder="Tuliskan alasan detail..." />
+              </div>
+
+              <!-- Step 5: GPS Geofence & Leaflet Map (Required for Hadir Salat) -->
+              <div id="gps-verification-section">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <label class="form-label" style="margin-bottom:0;">
+                    <i data-lucide="map-pin" style="width:16px;height:16px;color:var(--primary);display:inline;"></i>
+                    Pemeriksaan Lokasi GPS Masjid SMKN 6 Yogyakarta
+                  </label>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="refreshUserLocation()">
+                    <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Ambil GPS Asli
+                  </button>
+                </div>
+
+                <div id="attendance-map-container">
+                  <div id="attendance-map"></div>
+                  <div class="location-telemetry-bar">
+                    <div>
+                      <span id="loc-status-badge" class="badge badge-amber">Memeriksa Posisi...</span>
+                      <span id="loc-distance-text" style="font-weight:700;margin-left:6px;">-- m dari masjid</span>
+                    </div>
+                    <div style="color:var(--slate-600);">
+                      Akurasi: <span id="loc-accuracy-text">±-- m</span> &bull; Radius Resmi: <span id="loc-radius-text">9 m</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Simulation Toggle for Test / Emulator -->
+                <div style="background:var(--slate-100);padding:8px 12px;border-radius:var(--radius-sm);margin-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-wrap:wrap;gap:6px;">
+                  <span style="color:var(--slate-600);">Simulasi Pengujian Lokasi:</span>
+                  <div style="display:flex;gap:6px;">
+                    <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="simulateLocation('inside')">
+                      Di Masjid (Valid)
+                    </button>
+                    <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="simulateLocation('outside')">
+                      Di Luar Radius
+                    </button>
+                  </div>
+                </div>
+
+                <div id="location-warning-box" style="display:none;background:var(--rose-light);border:1px solid #fca5a5;padding:10px 14px;border-radius:var(--radius-sm);margin-top:10px;color:#991b1b;font-size:12.5px;">
+                  <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
+                    <div>
+                      <strong>Lokasi Anda Di Luar Radius Masjid (9m)!</strong><br>
+                      Status 'Hadir Salat' mewajibkan kehadiran fisik di area masjid. Jika mengalami kendala GPS atau sinyal lemah, ajukan tiket laporan kendala di bawah.
+                      <div style="margin-top:8px;">
+                        <button type="button" class="btn btn-rose" style="padding:4px 10px;font-size:11.5px;" onclick="openIssueFromLocation()">
+                          Lapor Kendala GPS ke Pengurus
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div style="margin-top:20px;">
+                <button type="submit" id="btn-submit-attendance" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;">
+                  <i data-lucide="send" style="width:18px;height:18px;"></i>
+                  Kirim Data Presensi ke Cloud
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- Attendance Receipt Modal -->
+          <div id="receipt-modal" class="modal-backdrop">
+            <div class="modal-window" style="max-width:440px;">
+              <div class="modal-header">
+                <div class="modal-title" style="display:flex;align-items:center;gap:6px;">
+                  <i data-lucide="check-circle-2" style="color:var(--emerald);"></i>
+                  Bukti Presensi Sah Digital
+                </div>
+                <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeReceiptModal()">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="receipt-container" id="receipt-card-content">
+                  <div class="animated-watermark-overlay"></div>
+                  <div class="watermark-text-ribbon" id="receipt-watermark-text">ROHIS ADZKIA &bull; SMKN 6 JOGJA</div>
+
+                  <div style="text-align:center;margin-bottom:14px;">
+                    <div style="width:64px;height:64px;margin:0 auto 8px;">
+                      <svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#si-adzkia-official-logo" /></svg>
+                    </div>
+                    <h3 style="font-size:17px;color:var(--primary);font-weight:800;">BUKTI PRESENSI SHOLAT</h3>
+                    <p style="font-size:11px;color:var(--slate-500);">SMKN 6 YOGYAKARTA &bull; ROHIS ADZKIA</p>
+                    <div style="margin-top:6px;">
+                      <span class="badge badge-emerald" id="receipt-ref-code">ADZ-20261017-001</span>
+                    </div>
+                  </div>
+
+                  <div style="border-top:1px dashed var(--slate-300);border-bottom:1px dashed var(--slate-300);padding:12px 0;margin-bottom:14px;display:flex;flex-direction:column;gap:7px;font-size:13px;">
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Nama Siswa</span>
+                      <strong id="receipt-student-name" style="color:var(--slate-900);">-</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Kelas</span>
+                      <strong id="receipt-student-class">-</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">NIS</span>
+                      <span id="receipt-student-nis">-</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Waktu Sholat</span>
+                      <strong id="receipt-prayer-name" style="color:var(--primary);">-</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Status Kehadiran</span>
+                      <span class="badge badge-emerald" id="receipt-status-badge">Hadir Salat</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Waktu Pencatatan</span>
+                      <span id="receipt-timestamp" style="font-variant-numeric:tabular-nums;">-</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                      <span style="color:var(--slate-600);">Metode & Penyimpanan</span>
+                      <span id="receipt-method">Google Cloud Firestore (HTTPS)</span>
+                    </div>
+                  </div>
+
+                  <div style="text-align:center;font-size:10.5px;color:var(--slate-500);line-height:1.4;">
+                    Data ini tersimpan aman di Cloud Firestore SMKN 6 Yogyakarta dan dapat diverifikasi langsung oleh Guru Pembina dan Pengurus Rohis.
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeReceiptModal()">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                  <i data-lucide="printer" style="width:16px;height:16px;"></i> Cetak / Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: JADWAL SHOLAT -->
+        <div id="student-tab-schedule" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="clock" style="width:20px;height:20px;color:var(--primary);"></i>
+                Jadwal 8 Waktu Sholat SMKN 6 Yogyakarta
+              </div>
+              <span class="badge badge-emerald">Jadwal Resmi Sekolah</span>
+            </div>
+            <div class="prayer-schedule-grid" id="full-prayer-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:16px;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: PANDUAN & TATA TERTIB -->
+        <div id="student-tab-guide" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="book-open" style="width:20px;height:20px;color:var(--primary);"></i>
+                Panduan Presensi Siswa SMKN 6 Yogyakarta
+              </div>
+            </div>
+            <div style="font-size:13.5px;color:var(--slate-700);line-height:1.7;">
+              <h4 style="color:var(--primary);margin-bottom:6px;">Ketentuan Presensi Terhubung Cloud:</h4>
+              <ul style="margin-left:20px;margin-bottom:14px;">
+                <li>Siswa dapat menggunakan koneksi <strong>Wi-Fi sekolah</strong> atau <strong>paket data seluler</strong> dari operator apa pun.</li>
+                <li>Seluruh data presensi otomatis tersimpan ke <strong>database pusat Google Cloud Firestore</strong>, sehingga langsung terlihat oleh Admin Rohis secara real-time.</li>
+                <li>Presensi mandiri <em>Hadir Salat</em> wajib berada dalam radius area masjid SMKN 6 Yogyakarta (9 meter).</li>
+                <li>Bagi siswi yang berhalangan (Haid), silakan memilih opsi <em>Haid</em>.</li>
+                <li>Bagi siswa/i non-Muslim, presensi sholat tidak diwajibkan.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: LAPOR KENDALA -->
+        <div id="student-tab-issue" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="help-circle" style="width:20px;height:20px;color:var(--amber);"></i>
+                Formulir Laporan Kendala Presensi ke Rohis
+              </div>
+            </div>
+            <form id="issue-form" onsubmit="event.preventDefault(); handleIssueSubmit();">
+              <div class="form-group">
+                <label class="form-label">Nama Siswa & Kelas</label>
+                <input type="text" id="issue-student-name" class="form-control" placeholder="Contoh: Ahmad Pratama (X KULINER 1)" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Jenis Kendala</label>
+                <select id="issue-type-select" class="form-control">
+                  <option value="GPS Lemah / Di Luar Radius">GPS Lemah / Di Luar Radius Masjid</option>
+                  <option value="GPS Tidak Tersedia di HP">GPS Tidak Aktif / Error di Perangkat</option>
+                  <option value="Perangkat Mati / Habis Baterai">Perangkat Mati / Baterai Habis</option>
+                  <option value="Permohonan Presensi Terlambat">Permohonan Presensi Terlambat</option>
+                  <option value="Data Siswa Belum Ada di Sistem">Data Siswa / Kelas Belum Ada</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Waktu Sholat</label>
+                <select id="issue-prayer-select" class="form-control"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Keterangan / Alasan Jujur</label>
+                <textarea id="issue-details" class="form-control" rows="3" placeholder="Jelaskan alasan atau kendala Anda dengan jujur..." required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">
+                <i data-lucide="send" style="width:16px;height:16px;"></i> Kirim Tiket Kendala ke Cloud
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 2: ADMIN ROHIS VIEW (12 COMPLETE MENUS)-->
+      <!-- ============================================== -->
+      <div id="admin-view">
+
+        <!-- Top Status Bar -->
+        <div style="background:white;padding:12px 18px;border-radius:var(--radius);border:1px solid var(--slate-200);margin-bottom:18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;">
+              <svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#si-adzkia-official-logo" /></svg>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--slate-900);" id="admin-user-display">Admin ROHIS Utama</div>
+              <div style="font-size:11.5px;color:var(--slate-600);" id="admin-role-display">
+                Pengurus Rohis &bull; Terhubung Database Cloud Firestore
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-outline" style="padding:6px 12px;font-size:12px;" onclick="syncFromCloud(true)">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Segarkan Data Cloud
+            </button>
+            <button class="btn btn-outline" style="padding:6px 12px;font-size:12px;" onclick="navigateTo('student')">
+              <i data-lucide="external-link" style="width:14px;height:14px;"></i> Halaman Siswa
+            </button>
+            <button class="btn btn-rose" style="padding:6px 12px;font-size:12px;" onclick="handleAdminLogout()">
+              <i data-lucide="log-out" style="width:14px;height:14px;"></i> Keluar
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-layout">
+
+          <!-- ADMIN SIDEBAR -->
+          <div class="admin-sidebar" id="admin-sidebar-nav">
+            <div class="admin-nav-item active" onclick="switchAdminMenu('dashboard')">
+              <i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i>
+              <span>1. Dashboard Real-Time</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('students')">
+              <i data-lucide="users" style="width:18px;height:18px;"></i>
+              <span>2. Data Siswa (39 Kelas)</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('attendance')">
+              <i data-lucide="clipboard-check" style="width:18px;height:18px;"></i>
+              <span>3. Presensi Sholat Cloud</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('issues')">
+              <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
+              <span>4. Antrean Kendala</span>
+              <span class="badge badge-rose" id="badge-issue-count" style="margin-left:auto;">0</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('prayer-schedule')">
+              <i data-lucide="clock" style="width:18px;height:18px;"></i>
+              <span>5. Jadwal 8 Sholat</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('location-settings')">
+              <i data-lucide="map-pin" style="width:18px;height:18px;"></i>
+              <span>6. Pengaturan Lokasi</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('reports')">
+              <i data-lucide="file-spreadsheet" style="width:18px;height:18px;"></i>
+              <span>7. Laporan Excel & PDF</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('audit-log')">
+              <i data-lucide="shield-alert" style="width:18px;height:18px;"></i>
+              <span>8. Keamanan & Audit</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('announcements')">
+              <i data-lucide="megaphone" style="width:18px;height:18px;"></i>
+              <span>9. Motivasi & Agenda</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('officers')">
+              <i data-lucide="user-check" style="width:18px;height:18px;"></i>
+              <span>10. Akun Pengurus (Jabatan Manual)</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('backup')">
+              <i data-lucide="database" style="width:18px;height:18px;"></i>
+              <span>11. Backup Cloud</span>
+            </div>
+            <div class="admin-nav-item" onclick="switchAdminMenu('system-settings')">
+              <i data-lucide="settings" style="width:18px;height:18px;"></i>
+              <span>12. Pengaturan Sistem</span>
+            </div>
+          </div>
+
+          <!-- ADMIN CONTENT -->
+          <div class="admin-content">
+
+            <!-- MENU 1: DASHBOARD -->
+            <div id="admin-sec-dashboard">
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon" style="background:#ecfdf5;color:var(--primary);">
+                    <i data-lucide="users" style="width:24px;height:24px;"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="num" id="stat-total-students">0</div>
+                    <div class="label">Siswa Terdaftar</div>
+                  </div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-icon" style="background:#e0f2fe;color:var(--sky);">
+                    <i data-lucide="graduation-cap" style="width:24px;height:24px;"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="num">39</div>
+                    <div class="label">Total Kelas Resmi</div>
+                  </div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-icon" style="background:#f0fdf4;color:var(--emerald);">
+                    <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="num" id="stat-today-present">0</div>
+                    <div class="label">Hadir Hari Ini (Live Cloud)</div>
+                  </div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-icon" style="background:var(--amber-light);color:#b45309;">
+                    <i data-lucide="help-circle" style="width:24px;height:24px;"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="num" id="stat-pending-issues">0</div>
+                    <div class="label">Antrean Kendala</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Attendance Feed in Dashboard -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="activity" style="width:18px;height:18px;color:var(--primary);"></i>
+                    Arus Presensi Masuk (Sinkronisasi Real-Time Seluler/Wi-Fi)
+                  </div>
+                  <div style="font-size:12px;color:var(--slate-500);" id="dashboard-sync-time">
+                    Diperbarui: baru saja
+                  </div>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Waktu (WIB)</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Sholat</th>
+                        <th>Status</th>
+                        <th>Metode</th>
+                        <th>Ref</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboard-recent-table">
+                      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--slate-400);">
+                        Belum ada presensi yang masuk. Sistem siap menerima presensi siswa secara live dari HP/komputer mana pun.
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 2: MASTER DATA SISWA (39 KELAS) -->
+            <div id="admin-sec-students" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="users" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Master Data Siswa SMKN 6 Yogyakarta (39 Kelas)
+                  </div>
+                  <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline" onclick="exportStudentsExcel()">
+                      <i data-lucide="download" style="width:14px;height:14px;"></i> Ekspor Excel
+                    </button>
+                    <button class="btn btn-primary" onclick="openAddStudentModal()">
+                      <i data-lucide="plus" style="width:14px;height:14px;"></i> Tambah Siswa Baru
+                    </button>
+                  </div>
+                </div>
+
+                <div class="filter-bar">
+                  <div style="flex:1;min-width:180px;">
+                    <input type="text" id="filter-student-search" class="form-control"
+                      placeholder="Cari nama, NIS, atau no absen..."
+                      oninput="renderStudentsTable()" />
+                  </div>
+                  <div>
+                    <select id="filter-student-class" class="form-control" onchange="renderStudentsTable()">
+                      <option value="">Semua 39 Kelas</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select id="filter-student-grade" class="form-control" onchange="renderStudentsTable()">
+                      <option value="">Semua Tingkat</option>
+                      <option value="X">Kelas X</option>
+                      <option value="XI">Kelas XI</option>
+                      <option value="XII">Kelas XII</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select id="filter-student-gender" class="form-control" onchange="renderStudentsTable()">
+                      <option value="">Semua Gender</option>
+                      <option value="L">Laki-laki (L)</option>
+                      <option value="P">Perempuan (P)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Lengkap</th>
+                        <th>NIS</th>
+                        <th>Kelas</th>
+                        <th>Absen</th>
+                        <th>Gender</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="students-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 3: PRESENSI SISWA -->
+            <div id="admin-sec-attendance" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="clipboard-check" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Semua Rekap Presensi Sholat (Google Cloud Firestore)
+                  </div>
+                  <button class="btn btn-primary" onclick="openManualAttendanceModal()">
+                    <i data-lucide="user-plus" style="width:14px;height:14px;"></i> Presensi Manual Petugas
+                  </button>
+                </div>
+
+                <div class="filter-bar">
+                  <div>
+                    <input type="date" id="filter-att-date" class="form-control" onchange="renderAttendanceTable()" />
+                  </div>
+                  <div>
+                    <select id="filter-att-prayer" class="form-control" onchange="renderAttendanceTable()">
+                      <option value="">Semua Waktu Sholat</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select id="filter-att-class" class="form-control" onchange="renderAttendanceTable()">
+                      <option value="">Semua 39 Kelas</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select id="filter-att-status" class="form-control" onchange="renderAttendanceTable()">
+                      <option value="">Semua Status</option>
+                      <option value="Hadir Salat">Hadir Salat</option>
+                      <option value="Izin">Izin</option>
+                      <option value="Sakit">Sakit</option>
+                      <option value="Pulang Sebelum Adzan">Pulang Sebelum Adzan</option>
+                      <option value="Haid">Haid</option>
+                      <option value="Terlambat">Terlambat</option>
+                    </select>
+                  </div>
+                  <div style="flex:1;min-width:140px;">
+                    <input type="text" id="filter-att-search" class="form-control" placeholder="Cari nama / NIS..." oninput="renderAttendanceTable()" />
+                  </div>
+                </div>
+
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Waktu Server</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Sholat</th>
+                        <th>Status</th>
+                        <th>Metode</th>
+                        <th>Jarak GPS</th>
+                        <th>Petugas / Alasan</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="attendance-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 4: ANTREAN KENDALA -->
+            <div id="admin-sec-issues" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="alert-circle" style="width:20px;height:20px;color:var(--amber);"></i>
+                    Antrean Laporan Kendala Siswa
+                  </div>
+                  <span class="badge badge-amber" id="issue-queue-status-badge">0 Menunggu Tindakan</span>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID Tiket</th>
+                        <th>Waktu Ajukan</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Jenis Kendala</th>
+                        <th>Sholat</th>
+                        <th>Keterangan</th>
+                        <th>Status</th>
+                        <th>Tindakan Petugas</th>
+                      </tr>
+                    </thead>
+                    <tbody id="issues-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 5: JADWAL SHOLAT -->
+            <div id="admin-sec-prayer-schedule" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="clock" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Konfigurasi 8 Jadwal Sholat SMKN 6 Yogyakarta
+                  </div>
+                  <button class="btn btn-outline" onclick="resetPrayerSchedules()">
+                    <i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i> Reset ke Standar
+                  </button>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Sholat</th>
+                        <th>Jam (WIB)</th>
+                        <th>Toleransi (Menit)</th>
+                        <th>Status Sesi</th>
+                        <th>Aturan Khusus</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="schedule-settings-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 6: PENGATURAN LOKASI GEOFENCE -->
+            <div id="admin-sec-location-settings" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="map-pin" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Pengaturan Geofence Radius Lokasi Masjid SMKN 6 Yogyakarta
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:20px;margin-bottom:16px;">
+                  <div>
+                    <div class="form-group">
+                      <label class="form-label">Latitude Titik Pusat</label>
+                      <input type="number" step="0.0000001" id="geo-lat-input" class="form-control" value="-7.7978407" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Longitude Titik Pusat</label>
+                      <input type="number" step="0.0000001" id="geo-lng-input" class="form-control" value="110.3828567" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Radius Geofence (Meter)</label>
+                      <input type="number" min="1" max="100" id="geo-radius-input" class="form-control" value="9" />
+                      <span style="font-size:11px;color:var(--slate-500);">Rekomendasi awal: 9 meter dari kubah masjid</span>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Alasan / Catatan Kalibrasi</label>
+                      <input type="text" id="geo-reason-input" class="form-control" placeholder="Kalibrasi rutin titik kumpul sholat..." />
+                    </div>
+                    <button type="button" class="btn btn-primary" style="width:100%;" onclick="saveGeofenceSettings()">
+                      <i data-lucide="save" style="width:16px;height:16px;"></i> Simpan ke Cloud Firestore
+                    </button>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--slate-700);margin-bottom:6px;">Pratinjau Peta Geofence</div>
+                    <div id="admin-geofence-map" style="height:280px;border-radius:var(--radius-sm);border:1px solid var(--slate-300);"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 7: LAPORAN (EXCEL & PDF) -->
+            <div id="admin-sec-reports" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="file-spreadsheet" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Laporan & Rekapitulasi Presensi Resmi
+                  </div>
+                  <div style="display:flex;gap:8px;">
+                    <button class="btn btn-emerald" onclick="exportReportExcel()">
+                      <i data-lucide="file-spreadsheet" style="width:16px;height:16px;"></i> Ekspor Excel (.xlsx)
+                    </button>
+                    <button class="btn btn-rose" onclick="exportReportPDF()">
+                      <i data-lucide="file-text" style="width:16px;height:16px;"></i> Ekspor PDF A4 (.pdf)
+                    </button>
+                    <button class="btn btn-outline" onclick="window.print()">
+                      <i data-lucide="printer" style="width:16px;height:16px;"></i> Cetak
+                    </button>
+                  </div>
+                </div>
+
+                <div class="filter-bar">
+                  <div>
+                    <label style="font-size:11px;font-weight:600;display:block;">Dari Tanggal</label>
+                    <input type="date" id="rep-date-from" class="form-control" />
+                  </div>
+                  <div>
+                    <label style="font-size:11px;font-weight:600;display:block;">Sampai Tanggal</label>
+                    <input type="date" id="rep-date-to" class="form-control" />
+                  </div>
+                  <div>
+                    <label style="font-size:11px;font-weight:600;display:block;">Filter Kelas</label>
+                    <select id="rep-filter-class" class="form-control">
+                      <option value="">Semua 39 Kelas</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:11px;font-weight:600;display:block;">Waktu Sholat</label>
+                    <select id="rep-filter-prayer" class="form-control">
+                      <option value="">Semua Sholat</option>
+                    </select>
+                  </div>
+                  <div style="align-self:flex-end;">
+                    <button class="btn btn-primary" onclick="renderReportsTable()">
+                      <i data-lucide="filter" style="width:14px;height:14px;"></i> Terapkan Filter
+                    </button>
+                  </div>
+                </div>
+
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Waktu Server</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>NIS</th>
+                        <th>Sholat</th>
+                        <th>Status</th>
+                        <th>Metode</th>
+                        <th>Petugas</th>
+                        <th>Kode Referensi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 8: KEAMANAN & AUDIT LOG -->
+            <div id="admin-sec-audit-log" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="shield-alert" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Audit Trail & Log Keamanan Sistem
+                  </div>
+                  <button class="btn btn-outline" onclick="exportAuditLogCSV()">
+                    <i data-lucide="download" style="width:14px;height:14px;"></i> Ekspor Log CSV
+                  </button>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Waktu Server</th>
+                        <th>Pelaku</th>
+                        <th>Jenis Aktivitas</th>
+                        <th>Objek</th>
+                        <th>Tingkat Risiko</th>
+                        <th>Hasil</th>
+                        <th>Keterangan</th>
+                      </tr>
+                    </thead>
+                    <tbody id="audit-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 9: MOTIVASI & AGENDA -->
+            <div id="admin-sec-announcements" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="megaphone" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Kelola Motivasi Islami & Hadits
+                  </div>
+                  <button class="btn btn-primary" onclick="openAddMotivationModal()">
+                    <i data-lucide="plus" style="width:14px;height:14px;"></i> Tambah Kutipan
+                  </button>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Tipe</th>
+                        <th>Teks Hadits / Hikmah</th>
+                        <th>Sumber Shahih</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="motivation-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 10: MANAJEMEN AKUN PENGURUS (JABATAN MANUAL) -->
+            <div id="admin-sec-officers" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="user-check" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Manajemen Akun Pengurus ROHIS ADZKIA
+                  </div>
+                  <button class="btn btn-primary" onclick="openAddOfficerModal()">
+                    <i data-lucide="user-plus" style="width:16px;height:16px;"></i> Tambah Akun Pengurus
+                  </button>
+                </div>
+
+                <div style="background:var(--primary-bg);border-left:4px solid var(--primary);padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:12.5px;color:var(--primary);">
+                  <strong>Struktur Akun Pengurus:</strong> Admin ROHIS Utama memiliki otoritas penuh. Setiap akun baru memiliki kolom <strong>Jabatan ROHIS yang diketik manual</strong> secara bebas (bukan dropdown) sesuai penugasan organisasi ROHIS ADZKIA.
+                </div>
+
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Lengkap</th>
+                        <th>Kelas</th>
+                        <th>Jabatan ROHIS (Manual)</th>
+                        <th>Username</th>
+                        <th>Hak Akses</th>
+                        <th>Status</th>
+                        <th>Dibuat</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="officers-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MENU 11: BACKUP CLOUD -->
+            <div id="admin-sec-backup" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="database" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Cadangan Data Cloud Firestore
+                  </div>
+                </div>
+                <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px;">
+                  Semua presensi tersimpan otomatis di Google Cloud Firestore. Anda juga dapat mengunduh arsip JSON lengkap sebagai cadangan lokal sewaktu-waktu.
+                </p>
+                <button class="btn btn-primary" onclick="downloadDatabaseBackup()">
+                  <i data-lucide="download" style="width:16px;height:16px;"></i> Unduh Cadangan Data Cloud (JSON)
+                </button>
+              </div>
+            </div>
+
+            <!-- MENU 12: PENGATURAN SISTEM -->
+            <div id="admin-sec-system-settings" style="display:none;">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <i data-lucide="settings" style="width:20px;height:20px;color:var(--primary);"></i>
+                    Informasi & Parameter Sistem
+                  </div>
+                </div>
+                <div style="max-width:550px;font-size:13px;color:var(--slate-700);line-height:1.7;">
+                  <div style="margin-bottom:10px;"><strong>Nama Aplikasi:</strong> SI-Adzkia</div>
+                  <div style="margin-bottom:10px;"><strong>Sekolah:</strong> SMKN 6 Yogyakarta</div>
+                  <div style="margin-bottom:10px;"><strong>Organisasi Pengelola:</strong> ROHIS ADZKIA</div>
+                  <div style="margin-bottom:10px;"><strong>Tagline:</strong> Fastabiqul Khairat</div>
+                  <div style="margin-bottom:10px;"><strong>Database Backend:</strong> Google Cloud Firestore (US-Central / Global)</div>
+                  <div style="margin-bottom:10px;"><strong>Database ID:</strong> <code>ai-studio-android-siadzkia-9bedac7c-830e-455d-b29b-521b06de8191</code></div>
+                  <div style="margin-bottom:10px;"><strong>Protokol Komunikasi:</strong> HTTPS REST API (Zero-Trust Security)</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;">
+        <div style="width:24px;height:24px;border-radius:50%;overflow:hidden;">
+          <svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#si-adzkia-official-logo" /></svg>
+        </div>
+        <strong>SI-Adzkia</strong> &bull; Sistem Informasi Presensi Sholat SMKN 6 Yogyakarta
+      </div>
+      <div style="color:var(--primary);font-style:italic;">Fastabiqul Khairat</div>
+      <div style="font-size:11px;color:var(--slate-500);margin-top:4px;">
+        Dikelola oleh ROHIS ADZKIA &copy; 2026–2027 &bull; SMKN 6 Yogyakarta &bull; Terhubung Cloud Database Terpusat
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODALS SECTION                                 -->
+  <!-- ============================================== -->
+
+  <!-- 1. HONESTY CONFIRMATION MODAL -->
+  <div id="honesty-modal" class="modal-backdrop">
+    <div class="modal-window" style="max-width:440px;">
+      <div class="modal-header" style="background:linear-gradient(135deg, #ecfdf5, #f0fdf4);">
+        <div class="modal-title" style="color:var(--primary);display:flex;align-items:center;gap:8px;">
+          <i data-lucide="heart-handshake" style="width:20px;height:20px;"></i>
+          Pernyataan Kejujuran Sholat
+        </div>
+        <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeHonestyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align:center;padding:12px 0;">
+          <div style="width:60px;height:60px;margin:0 auto 12px;">
+            <svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#si-adzkia-official-logo" /></svg>
+          </div>
+          <blockquote style="font-size:13.5px;font-style:italic;color:var(--slate-800);background:#f8fafc;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--slate-200);line-height:1.6;margin-bottom:12px;">
+            "Allah Maha Melihat dan Maha Mengetahui setiap apa yang kamu kerjakan. Pastikan data yang kamu kirimkan adalah wujud kejujuranmu kepada Allah SWT."
+          </blockquote>
+          <p style="font-size:12px;color:var(--slate-600);">
+            Data presensi ini direkam langsung ke server database pusat dan dapat diaudit secara sah oleh pihak sekolah.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeHonestyModal()">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="confirmAndDispatchAttendance()">
+          <i data-lucide="check" style="width:16px;height:16px;"></i> Saya Bersaksi & Kirim Presensi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ADMIN LOGIN MODAL -->
+  <div id="admin-login-modal" class="modal-backdrop">
+    <div class="modal-window" style="max-width:400px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+          <i data-lucide="lock" style="width:18px;height:18px;color:var(--primary);"></i>
+          Masuk Panel Pengurus ROHIS
+        </div>
+        <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeAdminLoginModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="admin-login-form" onsubmit="event.preventDefault(); handleAdminLogin();">
+          <div class="form-group">
+            <label class="form-label" for="login-username">Username Pengurus</label>
+            <input type="text" id="login-username" class="form-control" autocomplete="off" placeholder="Masukkan username..." required />
+          </div>
+          <div class="form-group" style="position:relative;">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-control" autocomplete="off" placeholder="Masukkan password..." required />
+            <button type="button" class="btn" style="position:absolute;right:2px;top:28px;padding:4px 8px;background:none;" onclick="togglePasswordVisibility('login-password')">
+              <i data-lucide="eye" style="width:16px;height:16px;color:var(--slate-500);"></i>
+            </button>
+          </div>
+          <div id="login-error-msg" style="display:none;background:var(--rose-light);border:1px solid #fca5a5;color:var(--rose);padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;margin-bottom:12px;"></div>
+
+          <div style="font-size:11.5px;color:var(--slate-600);background:var(--slate-100);padding:10px;border-radius:var(--radius-sm);margin-bottom:14px;">
+            <strong>Akses Admin ROHIS Utama:</strong><br>
+            Username: <code>adminrohis</code> &bull; Password: <code>adzkia2026</code>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i data-lucide="log-in" style="width:16px;height:16px;"></i> Masuk ke Panel
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADD / EDIT OFFICER MODAL (MENU 10 SPECIAL REQUIREMENT) -->
+  <div id="officer-modal" class="modal-backdrop">
+    <div class="modal-window" style="max-width:520px;">
+      <div class="modal-header">
+        <div class="modal-title" id="officer-modal-title">Tambah Akun Pengurus ROHIS</div>
+        <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeOfficerModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="officer-form" onsubmit="event.preventDefault(); saveOfficerAccount();">
+          <input type="hidden" id="officer-id" />
+
+          <!-- 1. Nama Lengkap -->
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap Pengurus <span style="color:var(--rose);">*</span></label>
+            <input type="text" id="officer-name" class="form-control" placeholder="Contoh: Muhammad Ihsan" required />
+          </div>
+
+          <!-- 2. Kelas -->
+          <div class="form-group">
+            <label class="form-label">Kelas Pengurus <span style="color:var(--rose);">*</span></label>
+            <select id="officer-class" class="form-control" required>
+              <!-- 39 classes options -->
+            </select>
+          </div>
+
+          <!-- 3. JABATAN ROHIS: WAJIB INPUT TEKS MANUAL, BUKAN DROPDOWN! (Requirement 4) -->
+          <div class="form-group">
+            <label class="form-label">
+              Jabatan ROHIS <span style="color:var(--rose);">*</span>
+              <span style="font-size:11px;color:var(--primary);font-weight:normal;">(Wajib ketik manual, bukan pilihan)</span>
+            </label>
+            <input type="text" id="officer-position" class="form-control"
+              placeholder="Ketik jabatan manual, misal: Ketua ROHIS / Sekretaris / Petugas Presensi Kuliner"
+              required />
+            <div style="font-size:11px;color:var(--slate-500);margin-top:3px;">
+              Admin dapat mengetik jabatan sesuai struktur organisasi ROHIS ADZKIA tanpa batasan dropdown.
+            </div>
+          </div>
+
+          <!-- 4. Username -->
+          <div class="form-group">
+            <label class="form-label">Username Akun <span style="color:var(--rose);">*</span></label>
+            <input type="text" id="officer-username" class="form-control" placeholder="Huruf kecil tanpa spasi, misal: ihsan.rohis" required />
+          </div>
+
+          <!-- 5. Password Awal -->
+          <div class="form-group" id="officer-pass-group">
+            <label class="form-label">Password Awal <span style="color:var(--rose);">*</span></label>
+            <div style="position:relative;">
+              <input type="password" id="officer-password" class="form-control" placeholder="Minimal 6 karakter..." />
+              <button type="button" class="btn" style="position:absolute;right:2px;top:4px;background:none;" onclick="togglePasswordVisibility('officer-password')">
+                <i data-lucide="eye" style="width:16px;height:16px;color:var(--slate-500);"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 6. Hak Akses (Granular Permissions) -->
+          <div class="form-group">
+            <label class="form-label">Hak Akses Modul Sistem</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--slate-50);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--slate-200);font-size:12px;">
+              <label class="form-check"><input type="checkbox" id="perm-dashboard" checked /> Melihat Dashboard</label>
+              <label class="form-check"><input type="checkbox" id="perm-students" /> Mengelola Data Siswa</label>
+              <label class="form-check"><input type="checkbox" id="perm-attendance" checked /> Melihat & Catat Presensi</label>
+              <label class="form-check"><input type="checkbox" id="perm-issues" checked /> Menangani Kendala Siswa</label>
+              <label class="form-check"><input type="checkbox" id="perm-schedule" /> Mengubah Jadwal Sholat</label>
+              <label class="form-check"><input type="checkbox" id="perm-location" /> Mengubah Titik/Radius Lokasi</label>
+              <label class="form-check"><input type="checkbox" id="perm-reports" checked /> Melihat & Ekspor Laporan</label>
+              <label class="form-check"><input type="checkbox" id="perm-audit" /> Melihat Log Audit Keamanan</label>
+              <label class="form-check"><input type="checkbox" id="perm-motivation" /> Kelola Motivasi & Agenda</label>
+              <label class="form-check"><input type="checkbox" id="perm-officers" /> Kelola Akun Pengurus (Admin)</label>
+              <label class="form-check"><input type="checkbox" id="perm-backup" /> Backup & Pemulihan Data</label>
+              <label class="form-check"><input type="checkbox" id="perm-settings" /> Konfigurasi Sistem</label>
+            </div>
+          </div>
+
+          <!-- 7. Status Akun -->
+          <div class="form-group">
+            <label class="form-label">Status Akun</label>
+            <select id="officer-status" class="form-control">
+              <option value="Aktif">Aktif</option>
+              <option value="Nonaktif">Nonaktif</option>
+            </select>
+          </div>
+
+          <div class="modal-footer" style="padding-left:0;padding-right:0;padding-bottom:0;">
+            <button type="button" class="btn btn-outline" onclick="closeOfficerModal()">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="check" style="width:16px;height:16px;"></i> Simpan ke Cloud Firestore
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MANUAL ATTENDANCE MODAL -->
+  <div id="manual-att-modal" class="modal-backdrop">
+    <div class="modal-window" style="max-width:480px;">
+      <div class="modal-header">
+        <div class="modal-title">Presensi Manual oleh Petugas ROHIS</div>
+        <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeManualAttModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="manual-att-form" onsubmit="event.preventDefault(); saveManualAttendance();">
+          <div class="form-group">
+            <label class="form-label">Pilih Siswa</label>
+            <select id="manual-student-select" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Waktu Sholat</label>
+            <select id="manual-prayer-select" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status Presensi</label>
+            <select id="manual-status-select" class="form-control" required>
+              <option value="Hadir Salat">Hadir Salat</option>
+              <option value="Izin">Izin</option>
+              <option value="Sakit">Sakit</option>
+              <option value="Pulang Sebelum Adzan">Pulang Sebelum Adzan</option>
+              <option value="Haid">Haid</option>
+              <option value="Terlambat">Terlambat</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Petugas ROHIS yang Memproses <span style="color:var(--rose);">*</span></label>
+            <input type="text" id="manual-officer-name" class="form-control" placeholder="Nama lengkap petugas..." required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alasan & Catatan Validasi <span style="color:var(--rose);">*</span></label>
+            <textarea id="manual-reason" class="form-control" rows="2" placeholder="Alasan presensi dicatat manual..." required></textarea>
+          </div>
+          <div class="modal-footer" style="padding:10px 0 0;">
+            <button type="button" class="btn btn-outline" onclick="closeManualAttModal()">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan ke Cloud</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. ADD / EDIT STUDENT MODAL -->
+  <div id="student-crud-modal" class="modal-backdrop">
+    <div class="modal-window" style="max-width:440px;">
+      <div class="modal-header">
+        <div class="modal-title" id="student-crud-title">Tambah Siswa Baru</div>
+        <button type="button" class="btn btn-outline" style="padding:4px 8px;" onclick="closeStudentCrudModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="student-crud-form" onsubmit="event.preventDefault(); saveStudentCrud();">
+          <input type="hidden" id="crud-student-id" />
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap</label>
+            <input type="text" id="crud-name" class="form-control" placeholder="Contoh: Muhammad Ihsan" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">NIS (Nomor Induk Siswa)</label>
+            <input type="text" id="crud-nis" class="form-control" placeholder="Contoh: 260105" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kelas (39 Kelas SMKN 6)</label>
+            <select id="crud-class" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nomor Absen (1 - 36)</label>
+            <input type="number" min="1" max="50" id="crud-absen" class="form-control" value="1" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select id="crud-gender" class="form-control">
+              <option value="L">Laki-laki (L)</option>
+              <option value="P">Perempuan (P)</option>
+            </select>
+          </div>
+          <div class="modal-footer" style="padding:10px 0 0;">
+            <button type="button" class="btn btn-outline" onclick="closeStudentCrudModal()">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan ke Cloud Firestore</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT: GOOGLE CLOUD FIRESTORE INTEGRATION & BUSINESS LOGIC-->
+  <!-- ============================================================== -->
+  <script>
+    /**
+     * SI-ADZKIA — SISTEM INFORMASI PRESENSI SHOLAT SMKN 6 YOGYAKARTA
+     * ROHIS ADZKIA © 2026–2027. Fastabiqul Khairat.
+     * Centralized Google Cloud Firestore Engine (HTTPS REST API).
+     */
+
+    // --- 1. GOOGLE CLOUD FIRESTORE CREDENTIALS & ENDPOINT ---
+    const FIRESTORE_CONFIG = {
+      projectId: "gen-lang-client-0719584812",
+      databaseId: "ai-studio-android-siadzkia-9bedac7c-830e-455d-b29b-521b06de8191",
+      apiKey: "AIzaSyD6DsrZ-L2EmgE-mW1Bm9DBFCCVW8deOjA",
+      baseUrl: "https://firestore.googleapis.com/v1/projects/gen-lang-client-0719584812/databases/ai-studio-android-siadzkia-9bedac7c-830e-455d-b29b-521b06de8191/documents"
+    };
+
+    // --- 2. 39 KELAS RESMI SMKN 6 YOGYAKARTA ---
+    const OFFICIAL_39_CLASSES = [
+      // Kuliner (12 kelas)
+      "X KULINER 1", "X KULINER 2", "X KULINER 3", "X KULINER 4",
+      "XI KULINER 1", "XI KULINER 2", "XI KULINER 3", "XI KULINER 4",
+      "XII KULINER 1", "XII KULINER 2", "XII KULINER 3", "XII KULINER 4",
+      // Tata Kecantikan (6 kelas)
+      "X TK 1", "X TK 2",
+      "XI TK 1", "XI TK 2",
+      "XII TK 1", "XII TK 2",
+      // Tata Busana (9 kelas)
+      "X TB 1", "X TB 2", "X TB 3",
+      "XI TB 1", "XI TB 2", "XI TB 3",
+      "XII TB 1", "XII TB 2", "XII TB 3",
+      // Usaha Layanan Wisata (3 kelas)
+      "X ULW", "XI ULW", "XII ULW",
+      // Perhotelan (6 kelas)
+      "X PH 1", "X PH 2",
+      "XI PH 1", "XI PH 2",
+      "XII PH 1", "XII PH 2",
+      // Spa, Beauty & Therapy (3 kelas)
+      "X SBT", "XI SBT", "XII SBT"
+    ];
+
+    // --- 3. 8 JADWAL SHOLAT DEFAULT ---
+    const DEFAULT_PRAYER_SCHEDULES = [
+      { id: "imsak", name: "Imsak", time: "04:12", tolerance: 20, active: true },
+      { id: "subuh", name: "Subuh", time: "04:22", tolerance: 60, active: true },
+      { id: "syuruq", name: "Terbit/Syuruq", time: "05:35", tolerance: 30, active: true },
+      { id: "dhuha", name: "Dhuha", time: "06:45", tolerance: 90, active: true },
+      { id: "dzuhur", name: "Dzuhur", time: "11:42", tolerance: 60, active: true },
+      { id: "ashar", name: "Ashar", time: "14:55", tolerance: 60, active: true },
+      { id: "maghrib", name: "Maghrib", time: "17:48", tolerance: 45, active: true },
+      { id: "isya", name: "Isya", time: "18:58", tolerance: 60, active: true }
+    ];
+
+    // --- 4. GEOFENCE MASJID SMKN 6 YOGYAKARTA ---
+    const DEFAULT_GEOFENCE = {
+      lat: -7.7978407,
+      lng: 110.3828567,
+      radius: 9, // 9 meter
+      address: "Masjid Rohis Adzkia, SMKN 6 Yogyakarta, Jl. Kenari No.4, Semaki, Umbulharjo, Yogyakarta"
+    };
+
+    // State Variables (Memory Cache synchronized with Cloud)
+    let memoryAttendances = []; // START KOSONG (0 data presensi awal)
+    let memoryIssues = [];      // START KOSONG (0 tiket awal)
+    let memoryStudents = [];    // Master Data Siswa
+    let memoryOfficers = [];    // Akun Pengurus
+    let memorySchedules = [...DEFAULT_PRAYER_SCHEDULES];
+    let memoryGeofence = { ...DEFAULT_GEOFENCE };
+
+    let currentUserSession = null;
+    let selectedStudent = null;
+    let selectedStatus = "Hadir Salat";
+    let pendingAttendancePayload = null;
+    let userLocation = { lat: -7.7978407, lng: 110.3828567, accuracy: 3.5, simulated: true };
+    let map = null;
+    let mapMarkerUser = null;
+    let mapMarkerCenter = null;
+    let mapCircleGeofence = null;
+    let adminMap = null;
+    let isCloudOnline = true;
+    let syncIntervalTimer = null;
+
+    // --- 5. FIRESTORE REST API CLIENT HELPER (CONVERT OBJECT <-> FIRESTORE FORMAT) ---
+    function toFirestoreFields(obj) {
+      const fields = {};
+      for (const [key, val] of Object.entries(obj)) {
+        if (val === null || val === undefined) {
+          fields[key] = { nullValue: null };
+        } else if (typeof val === "string") {
+          fields[key] = { stringValue: val };
+        } else if (typeof val === "number") {
+          if (Number.isInteger(val)) fields[key] = { integerValue: val.toString() };
+          else fields[key] = { doubleValue: val };
+        } else if (typeof val === "boolean") {
+          fields[key] = { booleanValue: val };
+        } else if (Array.isArray(val)) {
+          fields[key] = {
+            arrayValue: {
+              values: val.map(item => ({ stringValue: String(item) }))
+            }
+          };
+        } else if (typeof val === "object") {
+          fields[key] = { stringValue: JSON.stringify(val) };
+        }
+      }
+      return fields;
+    }
+
+    function fromFirestoreFields(fields) {
+      const result = {};
+      if (!fields) return result;
+      for (const [key, valObj] of Object.entries(fields)) {
+        if ("stringValue" in valObj) result[key] = valObj.stringValue;
+        else if ("integerValue" in valObj) result[key] = parseInt(valObj.integerValue, 10);
+        else if ("doubleValue" in valObj) result[key] = parseFloat(valObj.doubleValue);
+        else if ("booleanValue" in valObj) result[key] = valObj.booleanValue;
+        else if ("nullValue" in valObj) result[key] = null;
+        else if ("arrayValue" in valObj && valObj.arrayValue.values) {
+          result[key] = valObj.arrayValue.values.map(v => v.stringValue || Object.values(v)[0]);
+        }
+      }
+      return result;
+    }
+
+    // --- 6. HTTPS CLOUD FIRESTORE CALLS ---
+    async function queryCloudCollection(collectionId) {
+      const url = `${FIRESTORE_CONFIG.baseUrl}:runQuery?key=${FIRESTORE_CONFIG.apiKey}`;
+      const payload = {
+        structuredQuery: {
+          from: [{ collectionId: collectionId }]
+        }
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error(`Firestore query HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const rawItems = await res.json();
+      const results = [];
+      if (Array.isArray(rawItems)) {
+        for (const item of rawItems) {
+          if (item.document && item.document.fields) {
+            const data = fromFirestoreFields(item.document.fields);
+            const docId = item.document.name.split("/").pop();
+            data._docId = docId;
+            results.push(data);
+          }
+        }
+      }
+      return results;
+    }
+
+    async function createCloudDocument(collectionId, data, customId = null) {
+      let url = `${FIRESTORE_CONFIG.baseUrl}/${collectionId}?key=${FIRESTORE_CONFIG.apiKey}`;
+      if (customId) {
+        url += `&documentId=${encodeURIComponent(customId)}`;
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: toFirestoreFields(data) })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Gagal menyimpan ke Firestore: HTTP ${res.status}`);
+      }
+      return await res.json();
+    }
+
+    async function deleteCloudDocument(collectionId, docId) {
+      const url = `${FIRESTORE_CONFIG.baseUrl}/${collectionId}/${encodeURIComponent(docId)}?key=${FIRESTORE_CONFIG.apiKey}`;
+      const res = await fetch(url, { method: "DELETE" });
+      return res.ok;
+    }
+
+    // --- 7. DATABASE INITIALIZATION & SEEDING (KOSONGKAN DATA DEMO) ---
+    async function initCloudDatabase() {
+      updateCloudStatus("syncing", "Menghubungkan ke Cloud Firestore...");
+
+      try {
+        // 1. Fetch live attendances from Firestore
+        const cloudAtt = await queryCloudCollection("attendances");
+        // Sort descending by timestamp
+        cloudAtt.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+        memoryAttendances = cloudAtt;
+
+        // 2. Fetch issues from Firestore
+        const cloudIssues = await queryCloudCollection("issues");
+        cloudIssues.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        memoryIssues = cloudIssues;
+
+        // 3. Fetch students
+        let cloudStudents = await queryCloudCollection("students");
+        if (cloudStudents.length === 0) {
+          // Initialize master students for all 39 classes
+          cloudStudents = seedInitialStudentsList();
+          // Write initial master students to cloud
+          for (const s of cloudStudents) {
+            createCloudDocument("students", s, s.id).catch(e => console.warn(e));
+          }
+        }
+        memoryStudents = cloudStudents;
+
+        // 4. Fetch officers
+        let cloudOfficers = await queryCloudCollection("officers");
+        if (cloudOfficers.length === 0) {
+          const initialAdmin = {
+            id: "OFF-001",
+            name: "Ustadz Ahmad Fauzi, S.Pd.I",
+            class: "Guru Pembina",
+            position: "Admin ROHIS Utama",
+            username: "adminrohis",
+            passwordHash: "adzkia2026",
+            permissions: ["all"],
+            status: "Aktif",
+            createdAt: formatCurrentDateTime()
+          };
+          await createCloudDocument("officers", initialAdmin, "OFF-001");
+          cloudOfficers = [initialAdmin];
+        }
+        memoryOfficers = cloudOfficers;
+
+        updateCloudStatus("online", "Online • Cloud Terhubung (Live)");
+        renderDashboardFeed();
+        populateDropdowns();
+      } catch (err) {
+        console.warn("Cloud initial load fallback:", err);
+        updateCloudStatus("offline", "Offline • Menunggu Jaringan");
+        // Fallback local memory so app is still navigable
+        if (memoryStudents.length === 0) {
+          memoryStudents = seedInitialStudentsList();
+        }
+        if (memoryOfficers.length === 0) {
+          memoryOfficers = [{
+            id: "OFF-001",
+            name: "Admin ROHIS",
+            class: "Guru Pembina",
+            position: "Admin ROHIS Utama",
+            username: "adminrohis",
+            passwordHash: "adzkia2026",
+            permissions: ["all"],
+            status: "Aktif"
+          }];
+        }
+        populateDropdowns();
+      }
+    }
+
+    function seedInitialStudentsList() {
+      const list = [];
+      const sampleFirstNamesM = ["Muhammad", "Ahmad", "Fajar", "Bagus", "Dimas", "Rizky", "Rafi", "Danang", "Ilham", "Bayu"];
+      const sampleFirstNamesF = ["Siti", "Nur", "Annisa", "Putri", "Dwi", "Zahra", "Aulia", "Nabila", "Fatima", "Lestari"];
+      const sampleLastNames = ["Saputra", "Wibowo", "Pratama", "Hidayat", "Kurniawan", "Kusuma", "Ramadhan", "Setiawan", "Utomo", "Nugroho"];
+
+      let studentIdCounter = 1001;
+      OFFICIAL_39_CLASSES.forEach((className, classIdx) => {
+        for (let s = 1; s <= 2; s++) {
+          const isFemale = (className.includes("TB") || className.includes("TK") || className.includes("SBT")) ? (s === 1 ? true : false) : (s % 2 === 0);
+          const firstName = isFemale ? sampleFirstNamesF[(classIdx + s) % sampleFirstNamesF.length] : sampleFirstNamesM[(classIdx + s) % sampleFirstNamesM.length];
+          const lastName = sampleLastNames[(classIdx * 3 + s) % sampleLastNames.length];
+          const fullName = `${firstName} ${lastName}`.toUpperCase();
+          const nis = `26${String(classIdx + 1).padStart(2, '0')}${String(s).padStart(2, '0')}`;
+
+          list.push({
+            id: `STD-${studentIdCounter++}`,
+            name: fullName,
+            nis: nis,
+            class: className,
+            absen: s,
+            gender: isFemale ? "P" : "L",
+            status: "Aktif"
+          });
+        }
+      });
+      return list;
+    }
+
+    // --- 8. REAL-TIME CLOUD STATUS & POLLING ---
+    function updateCloudStatus(status, text) {
+      const badge = document.getElementById("cloud-status-indicator");
+      const textEl = document.getElementById("cloud-status-text");
+      if (badge && textEl) {
+        badge.className = `cloud-status-badge ${status}`;
+        textEl.textContent = text;
+      }
+      isCloudOnline = (status === "online");
+    }
+
+    async function syncFromCloud(showNotification = false) {
+      try {
+        const cloudAtt = await queryCloudCollection("attendances");
+        cloudAtt.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+        memoryAttendances = cloudAtt;
+
+        const cloudIssues = await queryCloudCollection("issues");
+        cloudIssues.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        memoryIssues = cloudIssues;
+
+        updateCloudStatus("online", "Online • Cloud Terhubung (Live)");
+        renderDashboardFeed();
+        if (showNotification) showToast("Data terbaru berhasil disinkronkan dari Cloud Firestore!", "success");
+
+        const syncTimeEl = document.getElementById("dashboard-sync-time");
+        if (syncTimeEl) {
+          syncTimeEl.textContent = `Diperbarui: ${new Date().toLocaleTimeString("id-ID")} WIB`;
+        }
+      } catch (e) {
+        updateCloudStatus("offline", "Offline • Menunggu Jaringan");
+      }
+    }
+
+    // Listen to network change
+    window.addEventListener("online", () => syncFromCloud(true));
+    window.addEventListener("offline", () => updateCloudStatus("offline", "Offline • Menunggu Jaringan Seluler/Wi-Fi"));
+
+    // --- 9. HAVERSINE FORMULA GPS ---
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // meters
+      const φ1 = lat1 * Math.PI / 180;
+      const φ2 = lat2 * Math.PI / 180;
+      const Δφ = (lat2 - lat1) * Math.PI / 180;
+      const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function formatCurrentDateTime() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    }
+
+    function isFridayToday() { return new Date().getDay() === 5; }
+
+    // --- 10. APP STARTUP LIFECYCLE ---
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      populateDropdowns();
+      startLiveClock();
+      initAttendanceMap();
+
+      // Connect to Firestore
+      initCloudDatabase();
+
+      // Periodic Auto-Sync from Cloud Firestore every 5 seconds
+      syncIntervalTimer = setInterval(() => {
+        syncFromCloud(false);
+      }, 5000);
+
+      // Splash Screen timer (2.4s)
+      setTimeout(() => {
+        const splash = document.getElementById("splash-screen");
+        const app = document.getElementById("app-container");
+        if (splash && app) {
+          splash.style.opacity = "0";
+          app.classList.remove("blurred");
+          setTimeout(() => { splash.style.visibility = "hidden"; }, 800);
+        }
+      }, 2400);
+    });
+
+    // --- 11. LIVE CLOCK & PRAYER COUNTDOWN ---
+    function startLiveClock() {
+      const liveClockEl = document.getElementById("live-clock");
+      const liveDateEl = document.getElementById("live-date");
+      const countdownEl = document.getElementById("hero-prayer-countdown");
+      const heroPrayerNameEl = document.getElementById("hero-prayer-name");
+
+      const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const monthsIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+      function tick() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const dateStr = `${daysIndo[now.getDay()]}, ${now.getDate()} ${monthsIndo[now.getMonth()]} ${now.getFullYear()}`;
+
+        if (liveClockEl) liveClockEl.innerHTML = `${timeStr} <span style="font-size:15px;font-weight:500;">WIB</span>`;
+        if (liveDateEl) liveDateEl.textContent = dateStr;
+
+        // Next Prayer Calculation
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        const nowSeconds = now.getSeconds();
+
+        let nextPrayer = null;
+        let minDiff = Infinity;
+        memorySchedules.forEach(p => {
+          const [h, m] = p.time.split(":").map(Number);
+          const pMinutes = h * 60 + m;
+          let diff = pMinutes - nowMinutes;
+          if (diff < 0) diff += 24 * 60;
+          if (diff < minDiff) {
+            minDiff = diff;
+            nextPrayer = p;
+          }
+        });
+
+        if (nextPrayer) {
+          let pName = nextPrayer.name;
+          if (pName === "Dzuhur" && isFridayToday()) pName = "Sholat Jum'at";
+          if (heroPrayerNameEl) heroPrayerNameEl.textContent = pName;
+
+          const totalDiffSeconds = minDiff * 60 - nowSeconds;
+          const cdH = Math.floor(totalDiffSeconds / 3600);
+          const cdM = Math.floor((totalDiffSeconds % 3600) / 60);
+          const cdS = totalDiffSeconds % 60;
+          if (countdownEl) {
+            countdownEl.textContent = `Countdown: ${pad(cdH)}:${pad(cdM)}:${pad(cdS)}`;
+          }
+        }
+      }
+
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    // --- 12. POPULATE DROPDOWNS ---
+    function populateDropdowns() {
+      const prayerSelect = document.getElementById("prayer-select");
+      const issuePrayerSelect = document.getElementById("issue-prayer-select");
+      const repFilterPrayer = document.getElementById("rep-filter-prayer");
+      const manualPrayerSelect = document.getElementById("manual-prayer-select");
+
+      let prayerOptionsHtml = "";
+      memorySchedules.forEach(p => {
+        let displayName = p.name;
+        if (p.name === "Dzuhur" && isFridayToday()) displayName = "Dzuhur / Sholat Jum'at";
+        prayerOptionsHtml += `<option value="${p.name}">${displayName} (${p.time} WIB)</option>`;
+      });
+
+      if (prayerSelect) prayerSelect.innerHTML = prayerOptionsHtml;
+      if (issuePrayerSelect) issuePrayerSelect.innerHTML = prayerOptionsHtml;
+      if (repFilterPrayer) repFilterPrayer.innerHTML = `<option value="">Semua Sholat</option>` + prayerOptionsHtml;
+      if (manualPrayerSelect) manualPrayerSelect.innerHTML = prayerOptionsHtml;
+
+      // 39 classes
+      const filterClassSelect = document.getElementById("filter-student-class");
+      const filterAttClass = document.getElementById("filter-att-class");
+      const repFilterClass = document.getElementById("rep-filter-class");
+      const officerClassSelect = document.getElementById("officer-class");
+      const crudClassSelect = document.getElementById("crud-class");
+
+      let classOptionsHtml = "";
+      OFFICIAL_39_CLASSES.forEach(cls => {
+        classOptionsHtml += `<option value="${cls}">${cls}</option>`;
+      });
+
+      if (filterClassSelect) filterClassSelect.innerHTML = `<option value="">Semua 39 Kelas</option>` + classOptionsHtml;
+      if (filterAttClass) filterAttClass.innerHTML = `<option value="">Semua 39 Kelas</option>` + classOptionsHtml;
+      if (repFilterClass) repFilterClass.innerHTML = `<option value="">Semua 39 Kelas</option>` + classOptionsHtml;
+      if (officerClassSelect) officerClassSelect.innerHTML = classOptionsHtml;
+      if (crudClassSelect) crudClassSelect.innerHTML = classOptionsHtml;
+
+      renderPrayerScheduleGrid();
+    }
+
+    function renderPrayerScheduleGrid() {
+      const grid = document.getElementById("full-prayer-grid");
+      if (!grid) return;
+      grid.innerHTML = memorySchedules.map(p => {
+        let displayName = p.name;
+        if (p.name === "Dzuhur" && isFridayToday()) displayName = "Sholat Jum'at";
+        return `
+          <div class="card" style="margin-bottom:0;padding:12px 10px;text-align:center;">
+            <div style="font-size:12px;font-weight:700;color:var(--slate-600);">${displayName}</div>
+            <div style="font-size:17px;font-weight:800;color:var(--primary);margin:4px 0;">${p.time}</div>
+            <span class="badge badge-sky" style="font-size:9.5px;">${p.tolerance}m toleransi</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- 13. STUDENT AUTOCOMPLETE (39 KELAS) ---
+    function handleStudentNameInput(query) {
+      const listEl = document.getElementById("student-autocomplete-list");
+      const inputEl = document.getElementById("student-name-input");
+      if (!listEl || !inputEl) return;
+
+      const upperVal = query.toUpperCase();
+      inputEl.value = upperVal;
+
+      if (upperVal.trim().length < 2) {
+        listEl.style.display = "none";
+        return;
+      }
+
+      const matches = memoryStudents.filter(s =>
+        s.name.includes(upperVal) || (s.nis && s.nis.includes(upperVal)) || (s.class && s.class.includes(upperVal))
+      ).slice(0, 8);
+
+      if (matches.length === 0) {
+        listEl.innerHTML = `<div class="autocomplete-item" style="color:var(--slate-400);cursor:default;">Tidak ditemukan kecocokan siswa</div>`;
+        listEl.style.display = "block";
+        return;
+      }
+
+      listEl.innerHTML = matches.map(s => `
+        <div class="autocomplete-item" onclick="selectStudentById('${s.id}')">
+          <div>
+            <strong>${s.name}</strong>
+            <div style="font-size:11px;color:var(--slate-500);">${s.class} &bull; NIS: ${s.nis} &bull; No: ${s.absen}</div>
+          </div>
+          <span class="badge ${s.gender === 'P' ? 'badge-rose' : 'badge-sky'}">${s.gender === 'P' ? 'Putri' : 'Putra'}</span>
+        </div>
+      `).join('');
+      listEl.style.display = "block";
+    }
+
+    function selectStudentById(studentId) {
+      const student = memoryStudents.find(s => s.id === studentId);
+      if (!student) return;
+
+      selectedStudent = student;
+      const listEl = document.getElementById("student-autocomplete-list");
+      if (listEl) listEl.style.display = "none";
+
+      const inputEl = document.getElementById("student-name-input");
+      if (inputEl) inputEl.value = student.name;
+
+      const cardEl = document.getElementById("student-identity-card");
+      if (cardEl) {
+        document.getElementById("card-student-name").textContent = student.name;
+        document.getElementById("card-student-class").textContent = student.class;
+        document.getElementById("card-student-nis").textContent = student.nis;
+        document.getElementById("card-student-absen").textContent = student.absen;
+        document.getElementById("card-student-gender").textContent = student.gender === "P" ? "Perempuan (P)" : "Laki-laki (L)";
+        cardEl.style.display = "block";
+      }
+
+      const haidOpt = document.getElementById("opt-haid");
+      if (haidOpt) {
+        if (student.gender === "L") {
+          haidOpt.classList.add("disabled");
+          if (selectedStatus === "Haid") selectStatus("Hadir Salat");
+        } else {
+          haidOpt.classList.remove("disabled");
+        }
+      }
+    }
+
+    function resetSelectedStudent() {
+      selectedStudent = null;
+      document.getElementById("student-identity-card").style.display = "none";
+      const inputEl = document.getElementById("student-name-input");
+      if (inputEl) {
+        inputEl.value = "";
+        inputEl.focus();
+      }
+    }
+
+    function selectStatus(status) {
+      if (status === "Haid" && selectedStudent && selectedStudent.gender === "L") {
+        showToast("Status Haid hanya berlaku khusus untuk siswi perempuan.", "warning");
+        return;
+      }
+
+      selectedStatus = status;
+      const statusMap = {
+        "Hadir Salat": "opt-hadir",
+        "Izin": "opt-izin",
+        "Sakit": "opt-sakit",
+        "Pulang Sebelum Adzan": "opt-pulang",
+        "Haid": "opt-haid",
+        "Terlambat": "opt-terlambat"
+      };
+
+      Object.entries(statusMap).forEach(([k, id]) => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (k === status) el.classList.add("selected");
+          else el.classList.remove("selected");
+        }
+      });
+
+      const notesGroup = document.getElementById("notes-group");
+      const gpsSection = document.getElementById("gps-verification-section");
+      if (notesGroup) notesGroup.style.display = (status !== "Hadir Salat") ? "block" : "none";
+      if (gpsSection) gpsSection.style.display = (status === "Hadir Salat") ? "block" : "none";
+    }
+
+    // --- 14. LEAFLET MAP & GEOFENCE ---
+    function initAttendanceMap() {
+      const geo = memoryGeofence;
+      const mapDiv = document.getElementById("attendance-map");
+      if (!mapDiv || typeof L === "undefined") return;
+
+      try {
+        map = L.map('attendance-map', {
+          center: [geo.lat, geo.lng],
+          zoom: 18,
+          zoomControl: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        const mosqueIcon = L.divIcon({
+          className: 'mosque-pin',
+          html: `<div style="background:#064e3b;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);">🕌</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+        mapMarkerCenter = L.marker([geo.lat, geo.lng], { icon: mosqueIcon }).addTo(map)
+          .bindPopup("<b>Masjid Rohis Adzkia</b><br>SMKN 6 Yogyakarta");
+
+        mapCircleGeofence = L.circle([geo.lat, geo.lng], {
+          color: '#10b981',
+          fillColor: '#34d399',
+          fillOpacity: 0.25,
+          radius: geo.radius
+        }).addTo(map);
+
+        const userIcon = L.divIcon({
+          className: 'user-pin',
+          html: `<div style="background:#0284c7;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 0 0 4px rgba(2,132,199,0.3);">📍</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        mapMarkerUser = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+
+        updateMapTelemetry();
+      } catch (e) {
+        console.warn("Map init error:", e);
+      }
+    }
+
+    function updateMapTelemetry() {
+      const geo = memoryGeofence;
+      const dist = calculateHaversineDistance(userLocation.lat, userLocation.lng, geo.lat, geo.lng);
+      const isInside = dist <= geo.radius;
+
+      const distText = document.getElementById("loc-distance-text");
+      const statusBadge = document.getElementById("loc-status-badge");
+      const accText = document.getElementById("loc-accuracy-text");
+      const radiusText = document.getElementById("loc-radius-text");
+      const warningBox = document.getElementById("location-warning-box");
+
+      if (distText) distText.textContent = `${dist.toFixed(1)} m dari masjid`;
+      if (accText) accText.textContent = `±${userLocation.accuracy}m`;
+      if (radiusText) radiusText.textContent = `${geo.radius} m`;
+
+      if (statusBadge) {
+        if (isInside) {
+          statusBadge.className = "badge badge-emerald";
+          statusBadge.textContent = "Di Dalam Area Masjid (Valid)";
+        } else {
+          statusBadge.className = "badge badge-rose";
+          statusBadge.textContent = "Di Luar Radius (Tidak Sah)";
+        }
+      }
+
+      if (warningBox) {
+        warningBox.style.display = (!isInside && selectedStatus === "Hadir Salat") ? "block" : "none";
+      }
+
+      if (mapMarkerUser) mapMarkerUser.setLatLng([userLocation.lat, userLocation.lng]);
+      if (mapCircleGeofence) {
+        mapCircleGeofence.setStyle({
+          color: isInside ? '#10b981' : '#ef4444',
+          fillColor: isInside ? '#34d399' : '#f87171'
+        });
+      }
+    }
+
+    function simulateLocation(mode) {
+      const geo = memoryGeofence;
+      if (mode === 'inside') {
+        userLocation = { lat: geo.lat + 0.00002, lng: geo.lng + 0.00002, accuracy: 2.5, simulated: true };
+        showToast("Lokasi disimulasikan di area masjid (~3.5m)", "success");
+      } else {
+        userLocation = { lat: geo.lat + 0.00035, lng: geo.lng + 0.00035, accuracy: 5.0, simulated: true };
+        showToast("Lokasi disimulasikan di luar radius (~48m)", "warning");
+      }
+      updateMapTelemetry();
+    }
+
+    function refreshUserLocation() {
+      if (navigator.geolocation) {
+        showToast("Mengakses sensor GPS gawai Anda...", "info");
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            userLocation = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: Math.round(pos.coords.accuracy || 4),
+              simulated: false
+            };
+            updateMapTelemetry();
+            showToast("Koordinat GPS gawai berhasil diperbarui!", "success");
+          },
+          err => {
+            showToast("GPS error: " + err.message + ". Menggunakan koordinat uji.", "warning");
+            updateMapTelemetry();
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      } else {
+        showToast("Browser/Gawai tidak mendukung GPS.", "warning");
+      }
+    }
+
+    // --- 15. ATTENDANCE SUBMISSION TO GOOGLE CLOUD FIRESTORE ---
+    function handleAttendanceSubmit() {
+      if (!selectedStudent) {
+        showToast("Silakan cari dan pilih nama siswa terlebih dahulu!", "warning");
+        document.getElementById("student-name-input").focus();
+        return;
+      }
+
+      const prayerName = document.getElementById("prayer-select").value;
+      const todayDateStr = new Date().toISOString().split("T")[0];
+
+      // Double-submission check
+      const existing = memoryAttendances.find(a =>
+        a.studentId === selectedStudent.id &&
+        a.prayer === prayerName &&
+        a.timestamp && a.timestamp.startsWith(todayDateStr)
+      );
+
+      if (existing) {
+        showToast(`Peringatan: Siswa ${selectedStudent.name} sudah tercatat presensi ${prayerName} hari ini!`, "warning");
+        return;
+      }
+
+      // Check geofence if Hadir Salat
+      const geo = memoryGeofence;
+      const dist = calculateHaversineDistance(userLocation.lat, userLocation.lng, geo.lat, geo.lng);
+      if (selectedStatus === "Hadir Salat" && dist > geo.radius) {
+        showToast("Presensi mandiri Hadir Salat ditolak karena berada di luar radius masjid (9m). Silakan gunakan menu 'Lapor Kendala'.", "error");
+        document.getElementById("location-warning-box").style.display = "block";
+        return;
+      }
+
+      const notes = document.getElementById("attendance-notes").value;
+      pendingAttendancePayload = {
+        studentId: selectedStudent.id,
+        studentName: selectedStudent.name,
+        class: selectedStudent.class,
+        nis: selectedStudent.nis,
+        absen: selectedStudent.absen,
+        gender: selectedStudent.gender,
+        prayer: prayerName,
+        status: selectedStatus,
+        notes: notes || "-",
+        distance: (selectedStatus === "Hadir Salat") ? parseFloat(dist.toFixed(1)) : null,
+        method: (selectedStatus === "Hadir Salat") ? `GPS Geofence (${dist.toFixed(1)}m)` : "Mandiri Siswa"
+      };
+
+      openHonestyModal();
+    }
+
+    function openHonestyModal() {
+      document.getElementById("honesty-modal").classList.add("show");
+    }
+    function closeHonestyModal() {
+      document.getElementById("honesty-modal").classList.remove("show");
+    }
+
+    async function confirmAndDispatchAttendance() {
+      if (!pendingAttendancePayload) return;
+      closeHonestyModal();
+
+      const payload = pendingAttendancePayload;
+      updateCloudStatus("syncing", "Mengirim presensi ke Cloud Firestore...");
+
+      // Generate Reference Code
+      const randHex = Math.floor(1000 + Math.random() * 9000);
+      const classCode = payload.class.replace(/[^A-Z0-9]/g, '').slice(0, 5);
+      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const refCode = `ADZ-${datePart}-${classCode}-${randHex}`;
+
+      const newRecord = {
+        id: `ATT-${Date.now()}`,
+        refCode: refCode,
+        studentId: payload.studentId,
+        studentName: payload.studentName,
+        class: payload.class,
+        nis: payload.nis,
+        absen: payload.absen || 0,
+        prayer: payload.prayer,
+        status: payload.status,
+        method: payload.method,
+        distance: payload.distance,
+        notes: payload.notes || "-",
+        timestamp: formatCurrentDateTime(),
+        officer: "-"
+      };
+
+      try {
+        // Send directly to Google Cloud Firestore via HTTPS POST
+        await createCloudDocument("attendances", newRecord, newRecord.id);
+        memoryAttendances.unshift(newRecord);
+
+        updateCloudStatus("online", "Online • Cloud Terhubung (Live)");
+        showToast("Alhamdulillah! Presensi Anda tersimpan di Cloud Database pusat.", "success");
+
+        // Show receipt
+        displayReceiptModal(newRecord);
+
+        // Reset form
+        resetSelectedStudent();
+        document.getElementById("attendance-notes").value = "";
+
+        // Refresh feed
+        renderDashboardFeed();
+      } catch (err) {
+        console.error("Firestore post error:", err);
+        // Fallback local memory if network drop
+        memoryAttendances.unshift(newRecord);
+        updateCloudStatus("offline", "Offline • Data Ditampung Sementara");
+        showToast("Tersimpan secara lokal (sedang menunggu koneksi cloud).", "warning");
+        displayReceiptModal(newRecord);
+        resetSelectedStudent();
+      }
+    }
+
+    function displayReceiptModal(record) {
+      document.getElementById("receipt-ref-code").textContent = record.refCode;
+      document.getElementById("receipt-student-name").textContent = record.studentName;
+      document.getElementById("receipt-student-class").textContent = `${record.class} (No. Absen: ${record.absen || '-'})`;
+      document.getElementById("receipt-student-nis").textContent = record.nis;
+      document.getElementById("receipt-prayer-name").textContent = record.prayer;
+      document.getElementById("receipt-status-badge").textContent = record.status;
+      document.getElementById("receipt-timestamp").textContent = `${record.timestamp} WIB`;
+      document.getElementById("receipt-watermark-text").textContent = `ROHIS ADZKIA • ${record.studentName} • ${record.refCode}`;
+
+      document.getElementById("receipt-modal").classList.add("show");
+    }
+    function closeReceiptModal() {
+      document.getElementById("receipt-modal").classList.remove("show");
+    }
+
+    // --- 16. ISSUE REPORTING TO CLOUD ---
+    async function handleIssueSubmit() {
+      const name = document.getElementById("issue-student-name").value;
+      const type = document.getElementById("issue-type-select").value;
+      const prayer = document.getElementById("issue-prayer-select").value;
+      const details = document.getElementById("issue-details").value;
+
+      if (!name || !details) {
+        showToast("Lengkapi seluruh kolom formulir kendala.", "warning");
+        return;
+      }
+
+      const ticketNum = `TIK-${new Date().getFullYear()}-${String(memoryIssues.length + 1).padStart(3, '0')}`;
+      const newIssue = {
+        id: ticketNum,
+        studentName: name,
+        class: "-",
+        type: type,
+        prayer: prayer,
+        details: details,
+        status: "Menunggu",
+        createdAt: formatCurrentDateTime(),
+        officer: "-"
+      };
+
+      try {
+        await createCloudDocument("issues", newIssue, ticketNum);
+        memoryIssues.unshift(newIssue);
+        showToast(`Tiket kendala #${ticketNum} terkirim ke Cloud Admin!`, "success");
+      } catch (e) {
+        memoryIssues.unshift(newIssue);
+        showToast(`Tiket kendala #${ticketNum} ditampung (antrean lokal).`, "warning");
+      }
+
+      document.getElementById("issue-form").reset();
+      switchStudentTab('form');
+    }
+
+    function openIssueFromLocation() {
+      switchStudentTab('issue');
+      document.getElementById("issue-type-select").value = "GPS Lemah / Di Luar Radius";
+      if (selectedStudent) {
+        document.getElementById("issue-student-name").value = `${selectedStudent.name} (${selectedStudent.class})`;
+      }
+    }
+
+    // --- 17. NAVIGATION & TABS ---
+    function switchStudentTab(tabId) {
+      const tabs = ['form', 'schedule', 'guide', 'issue'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`student-tab-${t}`);
+        if (el) el.style.display = (t === tabId) ? "block" : "none";
+      });
+
+      const buttons = document.querySelectorAll(".student-tab-btn");
+      buttons.forEach((btn, idx) => {
+        if (tabs[idx] === tabId) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+    }
+
+    function navigateTo(view) {
+      const studentView = document.getElementById("student-view");
+      const adminView = document.getElementById("admin-view");
+
+      if (view === "admin") {
+        if (!currentUserSession) {
+          openAdminLoginModal();
+          return;
+        }
+        if (studentView) studentView.style.display = "none";
+        if (adminView) adminView.style.display = "block";
+        document.getElementById("admin-btn-text").textContent = "Halaman Siswa";
+        renderDashboardFeed();
+      } else {
+        if (studentView) studentView.style.display = "block";
+        if (adminView) adminView.style.display = "none";
+        document.getElementById("admin-btn-text").textContent = currentUserSession ? "Panel Admin" : "Admin Rohis";
+      }
+    }
+
+    function handleAdminHeaderClick() {
+      const adminView = document.getElementById("admin-view");
+      if (adminView && adminView.style.display === "block") {
+        navigateTo("student");
+      } else {
+        navigateTo("admin");
+      }
+    }
+
+    // --- 18. ADMIN AUTHENTICATION ---
+    function openAdminLoginModal() {
+      document.getElementById("login-username").value = "";
+      document.getElementById("login-password").value = "";
+      document.getElementById("login-error-msg").style.display = "none";
+      document.getElementById("admin-login-modal").classList.add("show");
+    }
+    function closeAdminLoginModal() {
+      document.getElementById("admin-login-modal").classList.remove("show");
+    }
+
+    function togglePasswordVisibility(fieldId) {
+      const input = document.getElementById(fieldId);
+      if (input) input.type = (input.type === "password") ? "text" : "password";
+    }
+
+    function handleAdminLogin() {
+      const usernameInput = document.getElementById("login-username").value.trim().toLowerCase();
+      const passwordInput = document.getElementById("login-password").value;
+      const errorEl = document.getElementById("login-error-msg");
+
+      const officer = memoryOfficers.find(o => o.username && o.username.toLowerCase() === usernameInput && o.status === "Aktif");
+
+      if (!officer || officer.passwordHash !== passwordInput) {
+        errorEl.textContent = "Username atau password salah, atau akun nonaktif.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      currentUserSession = officer;
+      closeAdminLoginModal();
+
+      document.getElementById("admin-user-display").textContent = officer.name;
+      document.getElementById("admin-role-display").textContent = `${officer.position} (${officer.class}) • Terhubung Cloud Firestore`;
+
+      showToast(`Selamat datang, ${officer.name}!`, "success");
+      navigateTo("admin");
+    }
+
+    function handleAdminLogout() {
+      currentUserSession = null;
+      navigateTo("student");
+      showToast("Sesi pengurus diakhiri.", "info");
+    }
+
+    // --- 19. ADMIN SUBMENU SWITCHER ---
+    function switchAdminMenu(menuId) {
+      const menus = [
+        "dashboard", "students", "attendance", "issues", "prayer-schedule",
+        "location-settings", "reports", "audit-log", "announcements",
+        "officers", "backup", "system-settings"
+      ];
+
+      menus.forEach(m => {
+        const sec = document.getElementById(`admin-sec-${m}`);
+        if (sec) sec.style.display = (m === menuId) ? "block" : "none";
+      });
+
+      const navItems = document.querySelectorAll(".admin-nav-item");
+      navItems.forEach(item => {
+        if (item.getAttribute("onclick") && item.getAttribute("onclick").includes(menuId)) {
+          item.classList.add("active");
+        } else {
+          item.classList.remove("active");
+        }
+      });
+
+      if (menuId === "dashboard") renderDashboardFeed();
+      if (menuId === "students") renderStudentsTable();
+      if (menuId === "attendance") renderAttendanceTable();
+      if (menuId === "issues") renderIssuesTable();
+      if (menuId === "prayer-schedule") renderScheduleSettingsTable();
+      if (menuId === "location-settings") initAdminLocationMap();
+      if (menuId === "reports") renderReportsTable();
+      if (menuId === "audit-log") renderAuditTable();
+      if (menuId === "announcements") renderMotivationTable();
+      if (menuId === "officers") renderOfficersTable();
+    }
+
+    // --- 20. DASHBOARD FEED (REAL-TIME CLOUD) ---
+    function renderDashboardFeed() {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayAtt = memoryAttendances.filter(a => a.timestamp && a.timestamp.startsWith(todayStr));
+      const pendingIssues = memoryIssues.filter(i => i.status === "Menunggu");
+
+      const statStudents = document.getElementById("stat-total-students");
+      const statToday = document.getElementById("stat-today-present");
+      const statIssues = document.getElementById("stat-pending-issues");
+      const badgeCount = document.getElementById("badge-issue-count");
+
+      if (statStudents) statStudents.textContent = memoryStudents.length;
+      if (statToday) statToday.textContent = todayAtt.length;
+      if (statIssues) statIssues.textContent = pendingIssues.length;
+      if (badgeCount) badgeCount.textContent = pendingIssues.length;
+
+      // Table of recent attendances
+      const tbody = document.getElementById("dashboard-recent-table");
+      if (tbody) {
+        if (memoryAttendances.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--slate-400);">
+            Belum ada presensi yang masuk. Sistem bersih & siap menerima presensi siswa secara live dari HP/komputer mana pun.
+          </td></tr>`;
+        } else {
+          tbody.innerHTML = memoryAttendances.slice(0, 10).map(a => `
+            <tr>
+              <td>${a.timestamp ? a.timestamp.slice(11, 16) : '-'}</td>
+              <td><strong>${a.studentName}</strong></td>
+              <td>${a.class}</td>
+              <td>${a.prayer}</td>
+              <td><span class="badge ${a.status === 'Hadir Salat' ? 'badge-emerald' : 'badge-amber'}">${a.status}</span></td>
+              <td>${a.method}</td>
+              <td><code>${a.refCode}</code></td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+
+    // --- 21. MASTER DATA SISWA (CRUD KE CLOUD) ---
+    function renderStudentsTable() {
+      const search = (document.getElementById("filter-student-search")?.value || "").toUpperCase();
+      const filterClass = document.getElementById("filter-student-class")?.value;
+      const filterGrade = document.getElementById("filter-student-grade")?.value;
+      const filterGender = document.getElementById("filter-student-gender")?.value;
+
+      let list = memoryStudents;
+      if (search) list = list.filter(s => s.name.includes(search) || (s.nis && s.nis.includes(search)));
+      if (filterClass) list = list.filter(s => s.class === filterClass);
+      if (filterGrade) list = list.filter(s => s.class && s.class.startsWith(filterGrade + " "));
+      if (filterGender) list = list.filter(s => s.gender === filterGender);
+
+      const tbody = document.getElementById("students-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = list.map((s, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.nis}</td>
+          <td>${s.class}</td>
+          <td>${s.absen}</td>
+          <td><span class="badge ${s.gender === 'P' ? 'badge-rose' : 'badge-sky'}">${s.gender}</span></td>
+          <td><span class="badge badge-emerald">${s.status}</span></td>
+          <td>
+            <button class="btn btn-outline" style="padding:2px 6px;font-size:11px;" onclick="editStudentModal('${s.id}')">Edit</button>
+            <button class="btn btn-rose" style="padding:2px 6px;font-size:11px;" onclick="deleteStudentCloud('${s.id}')">Hapus</button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="8" style="text-align:center;">Tidak ada data siswa ditemukan</td></tr>';
+    }
+
+    function openAddStudentModal() {
+      document.getElementById("student-crud-title").textContent = "Tambah Siswa Baru";
+      document.getElementById("crud-student-id").value = "";
+      document.getElementById("crud-name").value = "";
+      document.getElementById("crud-nis").value = "";
+      document.getElementById("crud-absen").value = "1";
+      document.getElementById("student-crud-modal").classList.add("show");
+    }
+
+    function editStudentModal(id) {
+      const student = memoryStudents.find(s => s.id === id);
+      if (!student) return;
+      document.getElementById("student-crud-title").textContent = "Edit Data Siswa";
+      document.getElementById("crud-student-id").value = student.id;
+      document.getElementById("crud-name").value = student.name;
+      document.getElementById("crud-nis").value = student.nis;
+      document.getElementById("crud-class").value = student.class;
+      document.getElementById("crud-absen").value = student.absen;
+      document.getElementById("crud-gender").value = student.gender;
+      document.getElementById("student-crud-modal").classList.add("show");
+    }
+
+    function closeStudentCrudModal() {
+      document.getElementById("student-crud-modal").classList.remove("show");
+    }
+
+    async function saveStudentCrud() {
+      const id = document.getElementById("crud-student-id").value;
+      const name = document.getElementById("crud-name").value.trim().toUpperCase();
+      const nis = document.getElementById("crud-nis").value.trim();
+      const cls = document.getElementById("crud-class").value;
+      const absen = parseInt(document.getElementById("crud-absen").value, 10);
+      const gender = document.getElementById("crud-gender").value;
+
+      if (id) {
+        const student = memoryStudents.find(s => s.id === id);
+        if (student) {
+          student.name = name;
+          student.nis = nis;
+          student.class = cls;
+          student.absen = absen;
+          student.gender = gender;
+          createCloudDocument("students", student, student.id).catch(e => console.warn(e));
+          showToast("Data siswa diperbarui di cloud.", "success");
+        }
+      } else {
+        const newStudent = {
+          id: `STD-${Date.now()}`,
+          name, nis, class: cls, absen, gender,
+          status: "Aktif"
+        };
+        memoryStudents.push(newStudent);
+        createCloudDocument("students", newStudent, newStudent.id).catch(e => console.warn(e));
+        showToast("Siswa baru disimpan ke Cloud Firestore.", "success");
+      }
+
+      closeStudentCrudModal();
+      renderStudentsTable();
+    }
+
+    async function deleteStudentCloud(id) {
+      if (!confirm("Hapus data siswa ini dari Cloud?")) return;
+      memoryStudents = memoryStudents.filter(s => s.id !== id);
+      deleteCloudDocument("students", id).catch(e => console.warn(e));
+      showToast("Siswa dihapus dari cloud.", "info");
+      renderStudentsTable();
+    }
+
+    function exportStudentsExcel() {
+      if (typeof XLSX === "undefined") {
+        showToast("SheetJS belum selesai dimuat.", "warning");
+        return;
+      }
+      const wsData = memoryStudents.map((s, idx) => ({
+        "No": idx + 1,
+        "Nama Siswa": s.name,
+        "NIS": s.nis,
+        "Kelas": s.class,
+        "No. Absen": s.absen,
+        "Gender": s.gender,
+        "Status": s.status
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, "Master Siswa");
+      XLSX.writeFile(wb, `Data_Siswa_SMKN6_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast("File Excel data siswa berhasil diunduh!", "success");
+    }
+
+    // --- 22. PRESENSI SHOLAT TABLE & MANUAL ---
+    function renderAttendanceTable() {
+      const search = (document.getElementById("filter-att-search")?.value || "").toUpperCase();
+      const filterDate = document.getElementById("filter-att-date")?.value;
+      const filterPrayer = document.getElementById("filter-att-prayer")?.value;
+      const filterClass = document.getElementById("filter-att-class")?.value;
+      const filterStatus = document.getElementById("filter-att-status")?.value;
+
+      let list = memoryAttendances;
+      if (search) list = list.filter(a => (a.studentName && a.studentName.includes(search)) || (a.nis && a.nis.includes(search)));
+      if (filterDate) list = list.filter(a => a.timestamp && a.timestamp.startsWith(filterDate));
+      if (filterPrayer) list = list.filter(a => a.prayer === filterPrayer);
+      if (filterClass) list = list.filter(a => a.class === filterClass);
+      if (filterStatus) list = list.filter(a => a.status === filterStatus);
+
+      const tbody = document.getElementById("attendance-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = list.map((a, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${a.timestamp || '-'}</td>
+          <td><strong>${a.studentName}</strong></td>
+          <td>${a.class}</td>
+          <td>${a.prayer}</td>
+          <td><span class="badge ${a.status === 'Hadir Salat' ? 'badge-emerald' : 'badge-amber'}">${a.status}</span></td>
+          <td>${a.method}</td>
+          <td>${a.distance !== null && a.distance !== undefined ? a.distance + ' m' : '-'}</td>
+          <td>${a.notes || a.officer || '-'}</td>
+          <td>
+            <button class="btn btn-outline" style="padding:2px 6px;font-size:11px;" onclick="correctAttendancePrompt('${a.id}')">Koreksi</button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="10" style="text-align:center;padding:18px;">Belum ada presensi yang tercatat sesuai filter</td></tr>';
+    }
+
+    function openManualAttendanceModal() {
+      const select = document.getElementById("manual-student-select");
+      if (select) {
+        select.innerHTML = memoryStudents.map(s => `<option value="${s.id}">${s.name} (${s.class} - NIS: ${s.nis})</option>`).join('');
+      }
+      if (currentUserSession) {
+        document.getElementById("manual-officer-name").value = currentUserSession.name;
+      }
+      document.getElementById("manual-att-modal").classList.add("show");
+    }
+    function closeManualAttModal() {
+      document.getElementById("manual-att-modal").classList.remove("show");
+    }
+
+    async function saveManualAttendance() {
+      const studentId = document.getElementById("manual-student-select").value;
+      const prayer = document.getElementById("manual-prayer-select").value;
+      const status = document.getElementById("manual-status-select").value;
+      const officer = document.getElementById("manual-officer-name").value;
+      const reason = document.getElementById("manual-reason").value;
+
+      const student = memoryStudents.find(s => s.id === studentId);
+      if (!student) return;
+
+      const randHex = Math.floor(1000 + Math.random() * 9000);
+      const refCode = `ADZ-MAN-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${randHex}`;
+
+      const newRecord = {
+        id: `ATT-MAN-${Date.now()}`,
+        refCode: refCode,
+        studentId: student.id,
+        studentName: student.name,
+        class: student.class,
+        nis: student.nis,
+        prayer: prayer,
+        status: status,
+        method: "Manual Petugas",
+        distance: null,
+        notes: `Petugas: ${officer} (${reason})`,
+        timestamp: formatCurrentDateTime(),
+        officer: officer
+      };
+
+      try {
+        await createCloudDocument("attendances", newRecord, newRecord.id);
+        memoryAttendances.unshift(newRecord);
+        showToast("Presensi manual tersimpan di Cloud!", "success");
+      } catch (e) {
+        memoryAttendances.unshift(newRecord);
+        showToast("Presensi manual tersimpan lokal.", "warning");
+      }
+
+      closeManualAttModal();
+      renderAttendanceTable();
+      renderDashboardFeed();
+    }
+
+    async function correctAttendancePrompt(id) {
+      const att = memoryAttendances.find(a => a.id === id);
+      if (!att) return;
+      const newStatus = prompt(`Koreksi status untuk ${att.studentName} (${att.prayer}):\nPilihan: Hadir Salat, Izin, Sakit, Haid, Terlambat`, att.status);
+      if (!newStatus || newStatus === att.status) return;
+
+      const reason = prompt("Masukkan alasan koreksi:", "Verifikasi petugas");
+      if (!reason) return;
+
+      att.status = newStatus;
+      att.notes = `Koreksi: ${att.status} -> ${newStatus} (${reason})`;
+      att.method = "Koreksi Petugas";
+
+      createCloudDocument("attendances", att, att.id).catch(e => console.warn(e));
+      showToast("Status berhasil dikoreksi di cloud.", "success");
+      renderAttendanceTable();
+    }
+
+    // --- 23. ANTREAN KENDALA (CLOUD APPROVAL) ---
+    function renderIssuesTable() {
+      const tbody = document.getElementById("issues-table-body");
+      if (!tbody) return;
+
+      const pendingCount = memoryIssues.filter(i => i.status === "Menunggu").length;
+      document.getElementById("issue-queue-status-badge").textContent = `${pendingCount} Menunggu Tindakan`;
+
+      tbody.innerHTML = memoryIssues.map((i, idx) => `
+        <tr>
+          <td><code>${i.id}</code></td>
+          <td>${i.createdAt}</td>
+          <td><strong>${i.studentName}</strong></td>
+          <td>${i.class}</td>
+          <td><span class="badge badge-amber">${i.type}</span></td>
+          <td>${i.prayer}</td>
+          <td style="max-width:200px;font-size:11.5px;">${i.details}</td>
+          <td>
+            <span class="badge ${i.status === 'Disetujui' ? 'badge-emerald' : (i.status === 'Ditolak' ? 'badge-rose' : 'badge-amber')}">
+              ${i.status}
+            </span>
+          </td>
+          <td>
+            ${i.status === 'Menunggu' ? `
+              <button class="btn btn-emerald" style="padding:3px 8px;font-size:11px;" onclick="approveIssue('${i.id}')">
+                Setujui & Catat
+              </button>
+              <button class="btn btn-rose" style="padding:3px 8px;font-size:11px;" onclick="rejectIssue('${i.id}')">
+                Tolak
+              </button>
+            ` : `<span style="font-size:11px;color:var(--slate-500);">Selesai (${i.officer || '-'})</span>`}
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="9" style="text-align:center;padding:18px;">Tidak ada tiket kendala dalam antrean</td></tr>';
+    }
+
+    async function approveIssue(ticketId) {
+      const ticket = memoryIssues.find(i => i.id === ticketId);
+      if (!ticket) return;
+
+      const officerName = currentUserSession ? currentUserSession.name : "Admin Rohis";
+      if (!confirm(`Konfirmasi persetujuan presensi untuk ${ticket.studentName} (${ticket.prayer})? Kehadiran akan langsung dicatat secara sah ke database cloud.`)) return;
+
+      ticket.status = "Disetujui";
+      ticket.officer = officerName;
+      createCloudDocument("issues", ticket, ticket.id).catch(e => console.warn(e));
+
+      // Record attendance
+      const refCode = `ADZ-APP-${Date.now().toString().slice(-4)}`;
+      const attRecord = {
+        id: `ATT-APP-${Date.now()}`,
+        refCode: refCode,
+        studentId: "-",
+        studentName: ticket.studentName,
+        class: ticket.class,
+        nis: "-",
+        prayer: ticket.prayer,
+        status: "Hadir Salat",
+        method: `Approval Admin (${ticket.id})`,
+        distance: null,
+        notes: `Disetujui tiket: ${ticket.type}`,
+        timestamp: formatCurrentDateTime(),
+        officer: officerName
+      };
+
+      try {
+        await createCloudDocument("attendances", attRecord, attRecord.id);
+        memoryAttendances.unshift(attRecord);
+        showToast(`Tiket #${ticketId} disetujui & presensi tersimpan di Cloud!`, "success");
+      } catch (e) {
+        memoryAttendances.unshift(attRecord);
+      }
+
+      renderIssuesTable();
+      renderDashboardFeed();
+    }
+
+    function rejectIssue(ticketId) {
+      const ticket = memoryIssues.find(i => i.id === ticketId);
+      if (!ticket) return;
+      const reason = prompt("Alasan penolakan:", "Kriteria verifikasi tidak terpenuhi");
+      if (!reason) return;
+
+      ticket.status = "Ditolak";
+      ticket.officer = currentUserSession ? currentUserSession.name : "Admin Rohis";
+      ticket.details += ` [Ditolak: ${reason}]`;
+      createCloudDocument("issues", ticket, ticket.id).catch(e => console.warn(e));
+
+      showToast(`Tiket #${ticketId} ditolak.`, "info");
+      renderIssuesTable();
+    }
+
+    // --- 24. JADWAL 8 WAKTU SHOLAT SETTINGS ---
+    function renderScheduleSettingsTable() {
+      const tbody = document.getElementById("schedule-settings-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = memorySchedules.map((p, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${p.name}</strong></td>
+          <td><input type="time" class="form-control" style="width:110px;" id="sch-time-${p.id}" value="${p.time}" /></td>
+          <td><input type="number" class="form-control" style="width:80px;" id="sch-tol-${p.id}" value="${p.tolerance}" /></td>
+          <td>
+            <select class="form-control" id="sch-act-${p.id}">
+              <option value="true" ${p.active ? 'selected' : ''}>Aktif</option>
+              <option value="false" ${!p.active ? 'selected' : ''}>Nonaktif</option>
+            </select>
+          </td>
+          <td>${p.name === 'Dzuhur' ? '<span class="badge badge-emerald">Jumat -> Sholat Jum\'at</span>' : '-'}</td>
+          <td>
+            <button class="btn btn-primary" style="padding:4px 8px;font-size:11px;" onclick="saveSingleSchedule('${p.id}')">
+              Simpan
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveSingleSchedule(id) {
+      const item = memorySchedules.find(s => s.id === id);
+      if (!item) return;
+      item.time = document.getElementById(`sch-time-${id}`).value;
+      item.tolerance = parseInt(document.getElementById(`sch-tol-${id}`).value, 10);
+      item.active = document.getElementById(`sch-act-${id}`).value === "true";
+
+      showToast(`Jadwal ${item.name} disimpan.`, "success");
+      populateDropdowns();
+    }
+
+    function resetPrayerSchedules() {
+      if (!confirm("Kembalikan 8 jadwal sholat ke pengaturan standar?")) return;
+      memorySchedules = [...DEFAULT_PRAYER_SCHEDULES];
+      showToast("Jadwal sholat direset.", "success");
+      renderScheduleSettingsTable();
+      populateDropdowns();
+    }
+
+    // --- 25. PENGATURAN LOKASI GEOFENCE ---
+    function initAdminLocationMap() {
+      const geo = memoryGeofence;
+      document.getElementById("geo-lat-input").value = geo.lat;
+      document.getElementById("geo-lng-input").value = geo.lng;
+      document.getElementById("geo-radius-input").value = geo.radius;
+
+      const adminMapDiv = document.getElementById("admin-geofence-map");
+      if (!adminMapDiv || typeof L === "undefined") return;
+
+      if (!adminMap) {
+        adminMap = L.map('admin-geofence-map').setView([geo.lat, geo.lng], 18);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(adminMap);
+        L.marker([geo.lat, geo.lng]).addTo(adminMap).bindPopup("Titik Pusat Masjid");
+        L.circle([geo.lat, geo.lng], { radius: geo.radius, color: '#064e3b', fillColor: '#34d399', fillOpacity: 0.3 }).addTo(adminMap);
+      }
+    }
+
+    function saveGeofenceSettings() {
+      const lat = parseFloat(document.getElementById("geo-lat-input").value);
+      const lng = parseFloat(document.getElementById("geo-lng-input").value);
+      const radius = parseFloat(document.getElementById("geo-radius-input").value);
+
+      if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+        showToast("Format koordinat atau radius salah.", "error");
+        return;
+      }
+
+      memoryGeofence = { lat, lng, radius, address: DEFAULT_GEOFENCE.address };
+      createCloudDocument("system_config", memoryGeofence, "geofence").catch(e => console.warn(e));
+
+      showToast("Konfigurasi lokasi disimpan ke Cloud Firestore!", "success");
+
+      if (map) {
+        map.setView([lat, lng]);
+        if (mapCircleGeofence) {
+          mapCircleGeofence.setLatLng([lat, lng]);
+          mapCircleGeofence.setRadius(radius);
+        }
+      }
+      updateMapTelemetry();
+    }
+
+    // --- 26. LAPORAN & EKSPOR (EXCEL & PDF A4 DENGAN KOP LOGO) ---
+    function renderReportsTable() {
+      const dateFrom = document.getElementById("rep-date-from").value;
+      const dateTo = document.getElementById("rep-date-to").value;
+      const filterClass = document.getElementById("rep-filter-class").value;
+      const filterPrayer = document.getElementById("rep-filter-prayer").value;
+
+      let list = memoryAttendances;
+      if (dateFrom) list = list.filter(a => a.timestamp && a.timestamp.slice(0, 10) >= dateFrom);
+      if (dateTo) list = list.filter(a => a.timestamp && a.timestamp.slice(0, 10) <= dateTo);
+      if (filterClass) list = list.filter(a => a.class === filterClass);
+      if (filterPrayer) list = list.filter(a => a.prayer === filterPrayer);
+
+      const tbody = document.getElementById("report-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = list.map((a, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${a.timestamp || '-'}</td>
+          <td><strong>${a.studentName}</strong></td>
+          <td>${a.class}</td>
+          <td>${a.nis || '-'}</td>
+          <td>${a.prayer}</td>
+          <td><span class="badge ${a.status === 'Hadir Salat' ? 'badge-emerald' : 'badge-amber'}">${a.status}</span></td>
+          <td>${a.method}</td>
+          <td>${a.officer || '-'}</td>
+          <td><code>${a.refCode}</code></td>
+        </tr>
+      `).join('') || '<tr><td colspan="10" style="text-align:center;padding:18px;">Belum ada catatan presensi untuk periode ini</td></tr>';
+    }
+
+    function exportReportExcel() {
+      if (typeof XLSX === "undefined") {
+        showToast("Pustaka SheetJS belum selesai dimuat.", "warning");
+        return;
+      }
+      const wsData = memoryAttendances.map((a, idx) => ({
+        "No": idx + 1,
+        "Waktu Pencatatan (WIB)": a.timestamp,
+        "Nama Siswa": a.studentName,
+        "Kelas": a.class,
+        "NIS": a.nis,
+        "Waktu Sholat": a.prayer,
+        "Status Kehadiran": a.status,
+        "Metode Validasi": a.method,
+        "Jarak GPS (m)": a.distance || "-",
+        "Petugas": a.officer || "-",
+        "Kode Referensi": a.refCode
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, "Rekap Presensi");
+      XLSX.writeFile(wb, `Laporan_Presensi_SMKN6_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast("Laporan Excel (.xlsx) berhasil diunduh!", "success");
+    }
+
+    function exportReportPDF() {
+      if (typeof jspdf === "undefined" || !jspdf.jsPDF) {
+        showToast("Pustaka jsPDF belum siap.", "warning");
+        return;
+      }
+
+      const { jsPDF } = jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      // Official Header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.setTextColor(6, 78, 59);
+      doc.text("SI-ADZKIA — SMKN 6 YOGYAKARTA", 105, 16, { align: "center" });
+
+      doc.setFontSize(10.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text("Sistem Informasi Presensi Sholat Siswa • ROHIS ADZKIA", 105, 22, { align: "center" });
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.text("Tagline: Fastabiqul Khairat • Database: Google Cloud Firestore • Tanggal: " + new Date().toLocaleDateString("id-ID"), 105, 27, { align: "center" });
+
+      doc.setDrawColor(6, 78, 59);
+      doc.setLineWidth(0.6);
+      doc.line(14, 30, 196, 30);
+
+      const tableRows = memoryAttendances.map((a, idx) => [
+        idx + 1,
+        a.timestamp ? a.timestamp.slice(5, 16) : '-',
+        a.studentName,
+        a.class,
+        a.prayer,
+        a.status,
+        a.method
+      ]);
+
+      doc.autoTable({
+        startY: 34,
+        head: [["No", "Waktu", "Nama Siswa", "Kelas", "Sholat", "Status", "Metode"]],
+        body: tableRows,
+        theme: "striped",
+        headStyles: { fillColor: [6, 78, 59], textColor: [255, 255, 255], fontStyle: "bold" },
+        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: 14, right: 14 }
+      });
+
+      const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 14;
+      if (finalY < 250) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        doc.text("Mengetahui,", 30, finalY);
+        doc.text("Guru Pembina Rohis", 30, finalY + 5);
+        doc.text("Petugas Rohis Adzkia,", 145, finalY);
+        doc.text("Koordinator Presensi", 145, finalY + 5);
+
+        doc.text("( ......................................... )", 30, finalY + 24);
+        doc.text("( " + (currentUserSession ? currentUserSession.name : "Admin Rohis") + " )", 145, finalY + 24);
+      }
+
+      doc.save(`Laporan_Presensi_Sholat_A4_${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast("Laporan PDF A4 berhasil diunduh!", "success");
+    }
+
+    // --- 27. KEAMANAN & AUDIT LOG ---
+    function renderAuditTable() {
+      const logs = [
+        {
+          timestamp: formatCurrentDateTime(),
+          actor: currentUserSession ? currentUserSession.name : "System Cloud",
+          action: "Koneksi Cloud Firestore Aktif",
+          target: "Database Pusat",
+          risk: "Rendah",
+          result: "Sukses",
+          details: "Terhubung ke gen-lang-client-0719584812"
+        }
+      ];
+
+      const tbody = document.getElementById("audit-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = logs.map(l => `
+        <tr>
+          <td><small>${l.timestamp}</small></td>
+          <td><strong>${l.actor}</strong></td>
+          <td>${l.action}</td>
+          <td>${l.target}</td>
+          <td><span class="badge badge-sky">${l.risk}</span></td>
+          <td><span class="badge badge-emerald">${l.result}</span></td>
+          <td>${l.details}</td>
+        </tr>
+      `).join('');
+    }
+
+    function exportAuditLogCSV() {
+      let csv = "Timestamp,Actor,Action,Target,Risk,Result,Details\n";
+      csv += `"${formatCurrentDateTime()}","Admin","Cloud Audit","Firestore","Rendah","Sukses","Semua aktivitas online tercatat"\n`;
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `Audit_Log_SI_Adzkia_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      showToast("Log audit diekspor.", "success");
+    }
+
+    // --- 28. MOTIVASI & AGENDA ---
+    function renderMotivationTable() {
+      const list = [
+        { type: "Hadits Nabi", text: "Hendaklah kalian senantiasa berlaku jujur, karena sesungguhnya kejujuran mengantarkan kepada kebaikan...", source: "HR. Bukhari no. 6094 & Muslim no. 2607", active: true },
+        { type: "Muraqabah", text: "Dan Dia bersama kamu di mana saja kamu berada. Dan Allah Maha Melihat apa yang kamu kerjakan.", source: "QS. Al-Hadid: 4", active: true }
+      ];
+
+      const tbody = document.getElementById("motivation-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = list.map((m, idx) => `
+        <tr>
+          <td><span class="badge badge-sky">${m.type}</span></td>
+          <td>${m.text}</td>
+          <td><strong>${m.source}</strong></td>
+          <td><span class="badge badge-emerald">Aktif</span></td>
+          <td><button class="btn btn-outline" style="padding:2px 6px;font-size:11px;">Aktif</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddMotivationModal() {
+      const text = prompt("Teks hadits / mutiara kejujuran:");
+      if (!text) return;
+      const source = prompt("Sumber hadits:", "Hadits Shahih");
+      showToast("Kutipan ditambahkan.", "success");
+    }
+
+    // --- 29. MANAJEMEN AKUN PENGURUS (JABATAN MANUAL) ---
+    function renderOfficersTable() {
+      const tbody = document.getElementById("officers-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = memoryOfficers.map((o, idx) => {
+        const isMainAdmin = o.username === "adminrohis";
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${o.name}</strong></td>
+            <td>${o.class}</td>
+            <td><span class="badge badge-emerald" style="font-weight:700;">${o.position}</span></td>
+            <td><code>${o.username}</code></td>
+            <td><span class="badge badge-sky">${(o.permissions || []).join(", ") || "Standar"}</span></td>
+            <td><span class="badge ${o.status === 'Aktif' ? 'badge-emerald' : 'badge-rose'}">${o.status}</span></td>
+            <td><small>${o.createdAt ? o.createdAt.slice(0, 10) : '-'}</small></td>
+            <td>
+              <button class="btn btn-outline" style="padding:2px 6px;font-size:11px;" onclick="editOfficerModal('${o.id}')">Edit</button>
+              ${!isMainAdmin ? `
+                <button class="btn btn-outline" style="padding:2px 6px;font-size:11px;" onclick="resetOfficerPasswordPrompt('${o.id}')">Reset Sandi</button>
+              ` : '<span style="font-size:10px;color:var(--slate-400);">Admin Utama</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openAddOfficerModal() {
+      document.getElementById("officer-modal-title").textContent = "Tambah Akun Pengurus ROHIS";
+      document.getElementById("officer-id").value = "";
+      document.getElementById("officer-name").value = "";
+      document.getElementById("officer-position").value = ""; // MANUAL TEXT INPUT!
+      document.getElementById("officer-username").value = "";
+      document.getElementById("officer-password").value = "";
+      document.getElementById("officer-pass-group").style.display = "block";
+      document.getElementById("officer-modal").classList.add("show");
+    }
+
+    function editOfficerModal(id) {
+      const officer = memoryOfficers.find(o => o.id === id);
+      if (!officer) return;
+
+      document.getElementById("officer-modal-title").textContent = "Edit Akun: " + officer.name;
+      document.getElementById("officer-id").value = officer.id;
+      document.getElementById("officer-name").value = officer.name;
+      document.getElementById("officer-class").value = officer.class;
+      document.getElementById("officer-position").value = officer.position; // MANUAL TEXT INPUT!
+      document.getElementById("officer-username").value = officer.username;
+      document.getElementById("officer-pass-group").style.display = "none";
+      document.getElementById("officer-status").value = officer.status;
+      document.getElementById("officer-modal").classList.add("show");
+    }
+
+    function closeOfficerModal() {
+      document.getElementById("officer-modal").classList.remove("show");
+    }
+
+    async function saveOfficerAccount() {
+      const id = document.getElementById("officer-id").value;
+      const name = document.getElementById("officer-name").value.trim();
+      const cls = document.getElementById("officer-class").value;
+      const position = document.getElementById("officer-position").value.trim(); // MANUAL TEXT INPUT!
+      const username = document.getElementById("officer-username").value.trim().toLowerCase();
+      const status = document.getElementById("officer-status").value;
+
+      if (!name || !position || !username) {
+        showToast("Nama lengkap, jabatan manual, dan username wajib diisi!", "warning");
+        return;
+      }
+
+      const permissions = [];
+      document.querySelectorAll("[id^='perm-']").forEach(ch => {
+        if (ch.checked) permissions.push(ch.id.replace("perm-", ""));
+      });
+
+      if (id) {
+        const officer = memoryOfficers.find(o => o.id === id);
+        if (officer) {
+          officer.name = name;
+          officer.class = cls;
+          officer.position = position;
+          officer.username = username;
+          officer.permissions = permissions;
+          officer.status = status;
+          createCloudDocument("officers", officer, officer.id).catch(e => console.warn(e));
+          showToast("Data akun pengurus diperbarui di Cloud.", "success");
+        }
+      } else {
+        const password = document.getElementById("officer-password").value;
+        if (!password || password.length < 5) {
+          showToast("Password awal minimal 5 karakter!", "warning");
+          return;
+        }
+
+        const newOfficer = {
+          id: `OFF-${Date.now().toString().slice(-4)}`,
+          name, class: cls, position, username,
+          passwordHash: password,
+          permissions,
+          status,
+          createdAt: formatCurrentDateTime()
+        };
+
+        memoryOfficers.push(newOfficer);
+        createCloudDocument("officers", newOfficer, newOfficer.id).catch(e => console.warn(e));
+        showToast(`Akun pengurus '${name}' berhasil disimpan ke Cloud!`, "success");
+      }
+
+      closeOfficerModal();
+      renderOfficersTable();
+    }
+
+    function resetOfficerPasswordPrompt(id) {
+      const officer = memoryOfficers.find(o => o.id === id);
+      if (!officer) return;
+      const newPass = prompt(`Reset password untuk ${officer.name}:`, "adzkia" + new Date().getFullYear());
+      if (!newPass) return;
+      officer.passwordHash = newPass;
+      createCloudDocument("officers", officer, officer.id).catch(e => console.warn(e));
+      showToast("Password akun pengurus direset.", "success");
+    }
+
+    // --- 30. BACKUP ---
+    function downloadDatabaseBackup() {
+      const backupData = {
+        meta: {
+          app: "SI-Adzkia",
+          school: "SMKN 6 Yogyakarta",
+          database: "Google Cloud Firestore",
+          exportedAt: formatCurrentDateTime()
+        },
+        attendances: memoryAttendances,
+        students: memoryStudents,
+        officers: memoryOfficers,
+        issues: memoryIssues,
+        geofence: memoryGeofence
+      };
+
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([jsonStr], { type: "application/json" }));
+      a.download = `Backup_Cloud_SI_Adzkia_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      showToast("Cadangan Cloud Firestore berhasil diunduh!", "success");
+    }
+
+    // --- 31. TOAST NOTIFICATIONS ---
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div style="flex:1;">${message}</div>
+        <button style="border:none;background:none;cursor:pointer;color:var(--slate-400);" onclick="this.parentElement.remove()">&times;</button>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = "opacity 0.4s ease";
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 400);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

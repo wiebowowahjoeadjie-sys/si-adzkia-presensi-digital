@@ -1,0 +1,6 @@
+{
+  "name": "SI-Adzkia",
+  "description": "Sistem Informasi Presensi Sholat SMKN 6 Yogyakarta - ROHIS ADZKIA. Fastabiqul Khairat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
